@@ -1,0 +1,108 @@
+<template>
+  <div class="stagger-in space-y-4 px-4 pb-6 pt-4">
+    <SectionTitle title="修仙录" hint="这一部,只写你自己" />
+
+    <!-- 修行画像 -->
+    <div v-if="profile" class="card-ink px-4 py-3">
+      <p class="mb-1.5 font-kai text-[12px] tracking-[0.3em] text-ink-faint">修行画像</p>
+      <p class="font-kai text-[13px] leading-relaxed text-ink">「{{ profile.verdict }}」</p>
+      <div class="mt-2 space-y-1">
+        <p v-for="d in profile.daoShares" :key="d.name" class="flex items-center gap-2 text-[11px]">
+          <span class="w-14 shrink-0 text-ink-faint">{{ d.name }}</span>
+          <span class="track-ink h-1.25 grow">
+            <span class="bar-fill block h-full" :style="{ width: `${d.pct}%`, background: 'var(--color-cinnabar)' }" />
+          </span>
+          <span class="w-8 shrink-0 text-right tabular text-ink-soft">{{ d.pct }}%</span>
+        </p>
+      </div>
+      <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+        <p class="flex justify-between">
+          <span class="text-ink-faint">风险偏好</span>
+          <span class="text-ink-soft">{{ profile.riskText }}</span>
+        </p>
+        <p class="flex justify-between">
+          <span class="text-ink-faint">构筑倾向</span>
+          <span class="text-ink-soft">{{ profile.buildTendency }}</span>
+        </p>
+        <p class="flex justify-between">
+          <span class="text-ink-faint">常用流派</span>
+          <span class="text-ink-soft">{{ profile.favoriteBuild }}</span>
+        </p>
+        <p v-if="profile.favoritePacts.length" class="flex justify-between">
+          <span class="text-ink-faint">常立之契</span>
+          <span class="text-ink-soft">{{ profile.favoritePacts.join(' / ') }}</span>
+        </p>
+        <p v-if="profile.bestWorld" class="flex justify-between">
+          <span class="text-ink-faint">最擅长</span>
+          <span class="text-jade">{{ profile.bestWorld }}</span>
+        </p>
+        <p v-if="profile.weakWorld" class="flex justify-between">
+          <span class="text-ink-faint">最薄弱</span>
+          <span class="text-cinnabar">{{ profile.weakWorld }}</span>
+        </p>
+      </div>
+      <p class="mt-1.5 text-[9px] text-ink-ghost">画像全部来自真实道痕统计,不可人工修饰。</p>
+    </div>
+    <p v-else class="card-ink px-4 py-6 text-center text-[11px] text-ink-ghost">道痕未满五则,画像尚不成形。</p>
+
+    <!-- 修行节点 -->
+    <SectionTitle title="修行节点" :hint="`${endgame.milestones.length}/${MILESTONE_DEFS.length}`" />
+    <div class="card-ink px-4 py-2">
+      <div v-if="milestoneRows.length" class="relative ml-2 border-l border-ink/15 pl-4">
+        <div v-for="row in milestoneRows" :key="row.id" class="relative py-1.5">
+          <span class="absolute -left-5.25 top-2.5 h-2 w-2 rounded-full bg-gold-ink" />
+          <p class="font-kai text-[13px] text-ink">第 {{ row.life }} 世 · {{ row.name }}</p>
+          <p class="text-[10px] text-ink-faint">{{ row.desc }}</p>
+        </div>
+      </div>
+      <p v-else class="py-4 text-center text-[11px] text-ink-ghost">此录尚白。天界之行,自会留名。</p>
+    </div>
+
+    <!-- 我的纪录 -->
+    <SectionTitle title="我的纪录" hint="只与过去的自己比" />
+    <div class="card-ink divide-y divide-ink/6 px-4">
+      <template v-if="recordRows.length">
+        <p v-for="r in recordRows" :key="r.id" class="flex items-center gap-2 py-2 text-[12px]">
+          <span class="text-ink-faint">{{ r.name }}</span>
+          <span class="ml-auto tabular font-kai text-[13px] text-gold-ink">{{ r.valueText }}</span>
+          <span class="shrink-0 text-[10px] text-ink-ghost">第{{ r.life }}世 · {{ r.note }}</span>
+        </p>
+      </template>
+      <p v-else class="py-4 text-center text-[11px] text-ink-ghost">纪录待创。破界之时,自见分晓。</p>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+  import { computed } from 'vue'
+  import { useEndgameStore } from '@/stores/endgame'
+  import { cultivatorProfile, MILESTONE_DEFS, milestoneDef, RECORD_DEFS } from '@/core/identity'
+  import SectionTitle from '@/components/common/SectionTitle.vue'
+
+  const endgame = useEndgameStore()
+
+  const profile = computed(() => cultivatorProfile(endgame.marks))
+
+  const milestoneRows = computed(() =>
+    [...endgame.milestones]
+      .sort((a, b) => a.at - b.at)
+      .map(m => {
+        const def = milestoneDef(m.id)
+        return { id: m.id, life: m.life, name: def?.name ?? m.id, desc: def?.desc ?? '' }
+      })
+  )
+
+  const recordRows = computed(() =>
+    RECORD_DEFS.map(def => {
+      const r = endgame.records[def.id]
+      if (!r) return null
+      return {
+        id: def.id,
+        name: def.name,
+        valueText: def.unit === '×' ? `×${r.value}` : `${r.value} ${def.unit}`,
+        life: r.life,
+        note: r.note
+      }
+    }).filter((x): x is NonNullable<typeof x> => x !== null)
+  )
+</script>
