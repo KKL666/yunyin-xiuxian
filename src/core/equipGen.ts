@@ -76,7 +76,7 @@ export interface ResolvedEquipStats {
   flats: { attack: GNum; defense: GNum; maxHp: GNum }
   mods: StatMods
   /** 词条展示行 */
-  affixLines: { name: string; desc: string }[]
+  affixLines: { id: string; name: string; desc: string }[]
 }
 
 /** 解析装备实例的实际数值 */
@@ -84,7 +84,7 @@ export function resolveEquipStats(inst: EquipmentInstance): ResolvedEquipStats {
   const template = equipmentTemplate(inst.templateId)
   const flats = { attack: gnZero(), defense: gnZero(), maxHp: gnZero() }
   const mods: StatMods = {}
-  const affixLines: { name: string; desc: string }[] = []
+  const affixLines: { id: string; name: string; desc: string }[] = []
   if (!template) return { flats, mods, affixLines }
 
   const q = qualityDef(inst.quality)
@@ -106,7 +106,7 @@ export function resolveEquipStats(inst: EquipmentInstance): ResolvedEquipStats {
     if (!def) continue
     const value = affixValue(def, roll.roll)
     mods[def.key] = (mods[def.key] ?? 0) + value / 100
-    affixLines.push({ name: def.name, desc: def.desc.replace('{v}', String(value)) })
+    affixLines.push({ id: def.id, name: def.name, desc: def.desc.replace('{v}', String(value)) })
   }
   return { flats, mods, affixLines }
 }

@@ -1,5 +1,5 @@
 /** 随机词条池 —— 118 条,通过权重与品质门槛控制稀有度 */
-import type { AffixDef, AnyStatKey, EquipSlot } from '@/types'
+import type { AffixDef, AnyStatKey, EquipSlot, AffixRarity } from '@/types'
 
 const W = ['weapon'] as EquipSlot[]
 const A = ['head', 'body', 'wrist', 'belt', 'boots'] as EquipSlot[]
@@ -15,9 +15,11 @@ function a(
   max: number,
   desc: string,
   weight = 100,
-  opts: { slots?: EquipSlot[]; minRank?: number; decimals?: number } = {}
+  opts: { slots?: EquipSlot[]; minRank?: number; decimals?: number; rarity?: AffixRarity } = {}
 ): AffixDef {
-  return { id, name, desc, key, min, max, decimals: opts.decimals ?? 1, weight, slots: opts.slots, minRank: opts.minRank }
+  // 自动推断 rarity:权重≥90=common, ≥50=rare, ≥20=epic, <20=legendary
+  const rarity = opts.rarity ?? (weight >= 90 ? 'common' : weight >= 50 ? 'rare' : weight >= 20 ? 'epic' : 'legendary')
+  return { id, name, desc, key, min, max, decimals: opts.decimals ?? 1, weight, rarity, slots: opts.slots, minRank: opts.minRank }
 }
 
 export const AFFIXES: AffixDef[] = [

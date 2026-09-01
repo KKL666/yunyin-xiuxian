@@ -122,6 +122,29 @@ export const SOFT_CAPS: Partial<Record<import('@/types').AnyStatKey, { cap: numb
   shieldOnStart: { cap: 0.8, diminish: 0.5 }
 }
 
+// ============ Phase 30.3 洞府灵脉投资 ============
+/** 灵脉总容量(点) */
+export const VEIN_TOTAL_CAPACITY = 100
+/** 主脉容量(独占) */
+export const VEIN_MAIN_CAPACITY = 70
+/** 副脉单条上限 */
+export const VEIN_SIDE_CAP = 30
+/** 每点投资灵石倍率(stoneByTier 按玩家层级) */
+export const VEIN_POINT_STONE = 25
+/** 灵脉开放境界(金丹) */
+export const VEIN_UNLOCK_MAJOR = 2
+
+// ============ Phase 30.1 装备重铸与词条封存 ============
+/** 单件装备重铸次数上限 */
+export const REFORGE_MAX_COUNT = 10
+/** 重铸基础灵石(stoneByTier 倍率),每次重铸后 ×2 */
+export const REFORGE_STONE_BASE = 40
+/** 重铸器灵尘消耗 = 基础 + 次数 × 步进 */
+export const REFORGE_DUST_BASE = 30
+export const REFORGE_DUST_STEP = 15
+/** 封存一个词条的灵石倍率(第 n 次封存 ×n) */
+export const SEAL_STONE_BASE = 200
+
 /**
  * 敌人相对玩家裸装的补偿系数:随层级渐进
  * 前期玩家装备寥寥,敌人偏弱;后期默认玩家已成体系

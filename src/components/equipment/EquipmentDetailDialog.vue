@@ -29,8 +29,20 @@
         <div class="ink-divider my-3" />
         <p class="mb-1.5 font-kai text-[12px] tracking-[0.3em] text-ink-faint">词 条</p>
         <div v-for="(line, i) in resolved.affixLines" :key="i" class="mb-1.5 rounded-md bg-violet-ink/7 px-3 py-1.5">
-          <span class="font-kai text-[12px] text-violet-ink">「{{ line.name }}」</span>
-          <span class="ml-1 text-[12px] text-ink-soft">{{ line.desc }}</span>
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-kai text-[12px] text-violet-ink">「{{ line.name }}」</span>
+              <span class="ml-1 text-[12px] text-ink-soft">{{ line.desc }}</span>
+            </div>
+            <button
+              v-if="canSealAffix(line.id)"
+              class="ml-2 shrink-0 text-[10px] text-azure active:scale-90"
+              @click="doSealAffix(line.id)"
+            >
+              封存
+            </button>
+            <span v-else-if="isAffixSealed(line.id)" class="ml-2 shrink-0 text-[10px] text-jade">已封存</span>
+          </div>
         </div>
       </template>
       <template v-if="buildPreview">
@@ -93,12 +105,31 @@
       </template>
     </div>
     <template #footer>
-      <div class="flex gap-2">
-        <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
-        <button v-if="upCost" class="btn-ghost flex-1" @click="doUpgrade">强 化</button>
-        <button class="btn-ghost px-3" :disabled="isEquipped || inst?.locked" @click="doDecompose">
-          <GameIcon name="trash" :size="15" />
-        </button>
+      <div class="flex flex-col gap-2">
+        <!-- 重铸与封存 (Phase 30.1) -->
+        <template v-if="reforgeCostVal || sealCostVal">
+          <div class="flex gap-2 text-[11px]">
+            <button v-if="reforgeCostVal" class="btn-ghost flex-1 py-1!" @click="doReforge">
+              重铸随机词条
+              <span class="ml-1 tabular text-[10px] text-ink-faint">
+                {{ formatGN(reforgeCostVal.stone) }} · 尘×{{ reforgeCostVal.dust }}
+              </span>
+            </button>
+            <div v-if="sealCostVal" class="flex flex-1 items-center justify-center rounded-md border border-azure/20 bg-azure/5 px-2 py-1 text-azure">
+              封存一词 {{ formatGN(sealCostVal) }}
+            </div>
+          </div>
+          <p v-if="inst" class="text-center text-[10px] text-ink-ghost tabular">
+            重铸次数 {{ inst.reforgeCount ?? 0 }}/10 · 已封存 {{ (inst.sealedAffixIds ?? []).length }}/{{ Math.max(0, inst.affixes.length - 1) }}
+          </p>
+        </template>
+        <div class="flex gap-2">
+          <button class="btn-seal flex-1" @click="toggleEquip">{{ isEquipped ? '卸 下' : '装 备' }}</button>
+          <button v-if="upCost" class="btn-ghost flex-1" @click="doUpgrade">强 化</button>
+          <button class="btn-ghost px-3" :disabled="isEquipped || inst?.locked" @click="doDecompose">
+            <GameIcon name="trash" :size="15" />
+          </button>
+        </div>
       </div>
     </template>
   </BaseModal>
@@ -115,6 +146,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { endgameUnlocked } from '@/core/endgameService'
   import { whatIfEquip, type WhatIfReport } from '@/core/lab'
+  import { reforgeEquipment, reforgeCost, sealAffix, sealCost } from '@/core/reforge'
   import { usePlayerStore } from '@/stores/player'
   import { formatGN, formatPercent } from '@/utils/format'
   import { isZero, sub } from '@/utils/gnum'
@@ -133,6 +165,26 @@
   const resolved = computed(() => (inst.value ? resolveEquipStats(inst.value) : null))
   const isEquipped = computed(() => (inst.value && template.value ? inventory.equipped[template.value.slot] === inst.value.uid : false))
   const upCost = computed(() => (inst.value ? equipUpgradeCost(inst.value.uid) : null))
+
+  // ---- 重铸与封存 (Phase 30.1) ----
+  const reforgeCostVal = computed(() => (inst.value ? reforgeCost(inst.value) : null))
+  const sealCostVal = computed(() => (inst.value ? sealCost(inst.value) : null))
+
+  function isAffixSealed(affixId: string): boolean {
+    return (inst.value?.sealedAffixIds ?? []).includes(affixId)
+  }
+
+  function canSealAffix(affixId: string): boolean {
+    return inst.value !== undefined && sealCostVal.value !== null && !isAffixSealed(affixId)
+  }
+
+  function doSealAffix(affixId: string): void {
+    if (inst.value) sealAffix(inst.value.uid, affixId)
+  }
+
+  function doReforge(): void {
+    if (inst.value) reforgeEquipment(inst.value.uid)
+  }
 
   // ---- 修士实验室:反事实换装推演 ----
   const whatIf = ref<WhatIfReport | null>(null)

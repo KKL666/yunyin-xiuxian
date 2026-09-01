@@ -191,6 +191,8 @@ export interface EquipmentTemplate {
   minTier: number
 }
 
+export type AffixRarity = 'common' | 'rare' | 'epic' | 'legendary'
+
 export interface AffixDef {
   id: string
   name: string
@@ -201,6 +203,8 @@ export interface AffixDef {
   max: number
   decimals: number
   weight: number
+  /** 词条稀有度(影响重铸封存成本,Phase 30.5) */
+  rarity: AffixRarity
   slots?: EquipSlot[]
   /** 出现所需最低品质序号 */
   minRank?: number
@@ -222,6 +226,10 @@ export interface EquipmentInstance {
   level: number
   affixes: AffixRoll[]
   locked?: boolean
+  /** 已重铸次数(Phase 30.1,成本按次翻倍) */
+  reforgeCount?: number
+  /** 已封存的词条 id(重铸时不会被替换) */
+  sealedAffixIds?: string[]
 }
 
 // ============ 法宝 ============
