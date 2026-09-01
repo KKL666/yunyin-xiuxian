@@ -339,6 +339,29 @@ export interface EnemySkill {
   effect?: 'stun' | 'bleed' | 'drain' | 'shield' | 'multi' | 'pierce'
 }
 
+/** Boss 机制家族:定义 Boss 的核心战斗身份 */
+export type BossArchetype =
+  | 'berserk' // 狂暴型:高爆发,越战越强
+  | 'counter' // 反制型:受连击触发反击
+  | 'truedmg' // 真伤型:关键真伤窗口
+  | 'antiheal' // 治疗压制型:降低治疗效率
+  | 'spellbane' // 吞法型:神通越多越强
+  | 'evasive' // 闪避型:高闪避+命中检查
+  | 'attrition' // 消耗型:长战压迫
+  | 'threshold' // 门槛型:特定属性要求
+
+/** Boss 战斗阶段配置:随 HP 百分比触发状态变化 */
+export interface BossPhase {
+  /** HP 阈值(0~1),跌破此值进入该阶段 */
+  hpThreshold: number
+  /** 该阶段新增/修改的词条 */
+  modChanges?: Partial<StatMods>
+  /** 该阶段新增/替换的技能 */
+  skillChanges?: EnemySkill[]
+  /** 阶段标识(可选,用于战报展示) */
+  label?: string
+}
+
 export interface EnemyDef {
   id: string
   name: string
@@ -353,6 +376,10 @@ export interface EnemyDef {
   /** 敌人自带词条(闪避/减伤等,用于流派克制) */
   mods?: StatMods
   isBoss?: boolean
+  /** Boss 机制家族(仅 Boss 使用) */
+  archetype?: BossArchetype
+  /** Boss 战斗阶段(仅 Boss 使用) */
+  phases?: BossPhase[]
 }
 
 // ============ 区域 ============
@@ -542,6 +569,10 @@ export interface CombatantSnap {
   artifacts?: { def: ArtifactDef; level: number }[]
   /** 已激活的流派组合技(Phase 21,见 data/comboArts.ts) */
   comboArt?: string
+  /** Boss 战斗阶段(Phase 30.7,仅 Boss 携带) */
+  phases?: BossPhase[]
+  /** Boss 机制家族(Phase 30.7) */
+  archetype?: BossArchetype
 }
 
 export interface CombatLogEntry {

@@ -69,7 +69,9 @@ export function makeEnemySnap(def: EnemyDef, tier: number, dangerMult: number): 
     maxHp: mulN(scale, COMBAT_HP_BASE * def.hpMult * gear),
     speed: def.speed,
     mods: def.mods ? { ...def.mods } : {},
-    skills: def.skills.map(s => ({ name: s.name, mult: s.mult, rate: s.rate, effect: s.effect }))
+    skills: def.skills.map(s => ({ name: s.name, mult: s.mult, rate: s.rate, effect: s.effect })),
+    phases: def.phases,
+    archetype: def.archetype
   }
 }
 
@@ -384,8 +386,38 @@ export function resolveCombat(pSnap: CombatantSnap, eSnap: CombatantSnap, rng: R
   let rounds = 0
   const pFirst = 1 + modOf(pEff.mods, 'speed') >= eEff.speed
   const perRounds = rules?.perRounds
+  // Phase 30.7: Boss 阶段系统 + 机制家族
+  let phaseIdx = -1
+  const bossPhases = eSnap.phases ?? []
+  const bossMods: StatMods = { ...eEff.mods }
+  const bossSkills = [...eEff.skills]
+  eEff.mods = bossMods
+  eEff.skills = bossSkills
+
+  const applyPhaseTransition = (): void => {
+    const hpRatio = hpPct(e)
+    let nextIdx = -1
+    for (let i = 0; i < bossPhases.length; i += 1) {
+      if (hpRatio <= bossPhases[i]!.hpThreshold) nextIdx = i
+    }
+    if (nextIdx > phaseIdx) {
+      for (let i = phaseIdx + 1; i <= nextIdx; i += 1) {
+        const ph = bossPhases[i]!
+        if (ph.modChanges) Object.assign(bossMods, ph.modChanges)
+        if (ph.skillChanges) {
+          bossSkills.length = 0
+          bossSkills.push(...ph.skillChanges)
+        }
+        if (ph.label) push('info', 'e', `【${eSnap.name}】${ph.label}!`)
+      }
+      phaseIdx = nextIdx
+    }
+  }
+
   for (let round = 1; round <= maxRounds; round += 1) {
     rounds = round
+    // Boss 阶段检测(在每回合开始前触发)
+    if (bossPhases.length > 0 && !isZero(e.hp)) applyPhaseTransition()
     // 长生印:每隔若干回合玩家得一枚印记(恢复+护盾),敌人攻势渐涨
     if (perRounds && round % perRounds.interval === 0 && !isZero(p.hp) && !isZero(e.hp)) {
       healSelf(p, mulN(p.snap.maxHp, perRounds.playerHealPct))
