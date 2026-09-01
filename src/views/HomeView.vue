@@ -145,6 +145,9 @@
         <BuildingCard v-for="def in BUILDINGS" :key="def.id" :def="def" />
       </div>
     </section>
+
+    <!-- 灵脉投资 (Phase 30.3,解虚境解锁) -->
+    <VeinInvestCard v-if="player.major >= 2" />
   </div>
 </template>
 
@@ -164,6 +167,7 @@
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import BuildingCard from '@/components/dongfu/BuildingCard.vue'
+  import VeinInvestCard from '@/components/dongfu/VeinInvestCard.vue'
 
   const player = usePlayerStore()
   const resources = useResourcesStore()

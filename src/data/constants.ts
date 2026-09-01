@@ -108,6 +108,18 @@ export const DIMINISH_KEYS = [
 /** 战报播放基础间隔(毫秒),实际 = 基础 / 播放倍速 */
 export const COMBAT_PLAYBACK_BASE_MS = 460
 export const COMBAT_PLAYBACK_MIN_MS = 90
+
+// ============ Phase 30.3 洞府灵脉投资 ============
+/** 灵脉总容量(点) */
+export const VEIN_TOTAL_CAPACITY = 100
+/** 主脉容量(独占) */
+export const VEIN_MAIN_CAPACITY = 70
+/** 副脉单条上限 */
+export const VEIN_SIDE_CAP = 30
+/** 每点投资灵石倍率(stoneByTier 按玩家层级) */
+export const VEIN_POINT_STONE = 25
+/** 灵脉开放境界(金丹) */
+export const VEIN_UNLOCK_MAJOR = 2
 /**
  * 敌人相对玩家裸装的补偿系数:随层级渐进
  * 前期玩家装备寥寥,敌人偏弱;后期默认玩家已成体系

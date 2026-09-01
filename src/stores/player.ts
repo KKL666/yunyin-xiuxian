@@ -85,6 +85,7 @@ export const usePlayerStore = defineStore(
           cultivation.gongfaMods,
           cultivation.buffMods,
           dongfu.buildingMods,
+          dongfu.veinMods,
           titleMods.value,
           petMods.value,
           ...talentMods.value

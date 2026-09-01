@@ -10,6 +10,7 @@ import { collect, track } from './progress'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
+import { useDongfuStore } from '@/stores/dongfu'
 import { useUiStore } from '@/stores/ui'
 
 /** 随机习得一部功法(事件/掉落),返回功法名;无可学返回 null */
@@ -65,7 +66,9 @@ export function gongfaUpgradeCost(id: string): { wudao: number; page: number } |
   const lv = cultivation.learned[id]
   if (!def || !lv || lv >= def.maxLevel) return null
   const q = qualityDef(def.quality)
-  return { wudao: gongfaUpCost(q.rank, lv), page: Math.ceil(lv * (1 + q.rank * 0.5)) }
+  // 寒冥灵脉:参悟悟道点折扣(Phase 30.3)
+  const discount = Math.min(0.5, useDongfuStore().insightDiscount)
+  return { wudao: Math.max(1, Math.ceil(gongfaUpCost(q.rank, lv) * (1 - discount))), page: Math.ceil(lv * (1 + q.rank * 0.5)) }
 }
 
 export function upgradeGongfa(id: string): boolean {
