@@ -43,6 +43,10 @@ export const usePlayerStore = defineStore(
     const selectedRoute = ref<'safe' | 'risky' | 'dangerous'>('safe') // 当前探索路线
     const companionBeastId = ref<string | null>(null) // 陪行灵兽
 
+    // Phase 30 区域镇压(每个区域独立统计)
+    const regionStats = ref<Record<string, import('@/core/suppress').RegionStats>>({})
+    const suppressedRegions = ref<string[]>([])
+
     // ---------- 境界 ----------
     const realm = computed(() => realmDef(major.value))
     const realmName = computed(() => realmLabel(major.value, sub.value))
@@ -216,6 +220,49 @@ export const usePlayerStore = defineStore(
       lastCaveEventDay.value = day
     }
 
+    // Phase 30 区域镇压操作
+    function updateRegionStats(
+      regionId: string,
+      win: boolean,
+      rounds: number,
+      damageTakenPct: number,
+    ): void {
+      const current = regionStats.value[regionId] ?? {
+        consecutiveWins: 0,
+        totalFights: 0,
+        avgRounds: 0,
+        avgDamageTakenPct: 0,
+        lastUpdateAt: Date.now(),
+      }
+
+      const newStats = {
+        consecutiveWins: win ? current.consecutiveWins + 1 : 0,
+        totalFights: current.totalFights + 1,
+        avgRounds: current.avgRounds * 0.7 + rounds * 0.3,
+        avgDamageTakenPct: current.avgDamageTakenPct * 0.7 + damageTakenPct * 0.3,
+        lastUpdateAt: Date.now(),
+      }
+
+      regionStats.value = { ...regionStats.value, [regionId]: newStats }
+    }
+
+    function suppressRegion(regionId: string): void {
+      if (!suppressedRegions.value.includes(regionId)) {
+        suppressedRegions.value = [...suppressedRegions.value, regionId]
+      }
+    }
+
+    function unsuppressRegion(regionId: string): void {
+      suppressedRegions.value = suppressedRegions.value.filter(id => id !== regionId)
+      // 重置连胜计数
+      if (regionStats.value[regionId]) {
+        regionStats.value = {
+          ...regionStats.value,
+          [regionId]: { ...regionStats.value[regionId]!, consecutiveWins: 0 },
+        }
+      }
+    }
+
     return {
       name,
       linggen,
@@ -233,6 +280,8 @@ export const usePlayerStore = defineStore(
       lastCaveEventDay,
       selectedRoute,
       companionBeastId,
+      regionStats,
+      suppressedRegions,
       realm,
       realmName,
       subName,
@@ -266,7 +315,10 @@ export const usePlayerStore = defineStore(
       resetWinStreak,
       setSelectedRoute,
       setCompanionBeast,
-      markCaveEventToday
+      markCaveEventToday,
+      updateRegionStats,
+      suppressRegion,
+      unsuppressRegion
     }
   },
   { persist: persistConfig('player') }

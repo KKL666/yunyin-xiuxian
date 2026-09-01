@@ -15,6 +15,7 @@ import { tickExploration, stopExploration } from './exploration'
 import { settleOffline, sanitizeOfflineInputs } from './offline'
 import { checkStateAchievements, rolloverDailyIfNeeded } from './progress'
 import { mayTriggerEnlightenment, mayTriggerCaveEvent } from './earlyGameService'
+import { settleSuppressedRegions } from './suppress'
 
 const PERIODIC_CHECK_SEC = 30
 
@@ -128,6 +129,8 @@ class GameEngine {
       tickExploration(now)
       // Phase 28: 悟道顿悟触发(修炼时随机)
       mayTriggerEnlightenment()
+      // Phase 30: 镇压区域被动收益
+      settleSuppressedRegions(dt)
       // 寿元流逝
       player.addAge((dt / 3600) * AGE_YEARS_PER_HOUR)
       this.checkDeath()

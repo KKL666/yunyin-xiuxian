@@ -9,18 +9,24 @@
     <template v-else>
       <SectionTitle title="历练" hint="行万里路,炼一颗心" />
       <div class="space-y-2.5">
-        <div v-for="row in visibleRows" :key="row.def.id" class="card-ink px-4 py-3" :class="{ 'opacity-70': !row.unlocked }">
+        <div
+          v-for="row in visibleRows"
+          :key="row.def.id"
+          class="card-ink px-4 py-3"
+          :class="{ 'opacity-70': !row.unlocked, 'border-gold-ink/30! bg-gold-ink/5': row.suppressed }"
+        >
           <div class="flex items-center gap-3">
             <span
               class="grid h-10 w-10 shrink-0 place-items-center rounded-md"
-              :class="row.unlocked ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-ghost'"
+              :class="row.suppressed ? 'bg-gold-ink/15 text-gold-ink' : row.unlocked ? 'bg-indigo-ink/10 text-indigo-ink' : 'bg-ink/6 text-ink-ghost'"
             >
-              <GameIcon :name="row.unlocked ? row.def.icon : 'lock'" :size="18" />
+              <GameIcon :name="row.suppressed ? 'shield-check' : row.unlocked ? row.def.icon : 'lock'" :size="18" />
             </span>
             <div class="min-w-0 grow">
               <p class="flex items-center gap-2">
                 <span class="font-kai text-[15px] tracking-wider text-ink">{{ row.def.name }}</span>
-                <span v-if="row.cleared" class="chip-ink border-jade/60 text-[9px] text-jade">已靖</span>
+                <span v-if="row.suppressed" class="chip-ink border-gold-ink/60 text-[9px] text-gold-ink">已镇压</span>
+                <span v-else-if="row.cleared" class="chip-ink border-jade/60 text-[9px] text-jade">已靖</span>
               </p>
               <p class="mt-0.5 text-[11px] text-ink-faint">
                 {{ REALMS[row.def.minRealm]?.name }}境相宜 ·
@@ -28,7 +34,18 @@
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
               </p>
             </div>
-            <button v-if="row.unlocked" class="btn-seal shrink-0 px-4! py-2! text-[13px]!" @click="chooseMode(row.def)">出发</button>
+            <button v-if="row.unlocked && !row.suppressed" class="btn-seal shrink-0 px-4! py-2! text-[13px]!" @click="chooseMode(row.def)">出发</button>
+            <div v-else-if="row.suppressed" class="shrink-0 text-right">
+              <span class="block text-[11px] text-gold-ink">
+                自动产出中 · {{ rateText(row.def) }}/时
+              </span>
+              <button
+                class="mt-1 text-[10px] text-ink-faint underline underline-offset-2 active:text-ink"
+                @click.stop="unsuppress(row.def.id)"
+              >
+                解除镇压,再历此地
+              </button>
+            </div>
           </div>
           <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">
             <template v-if="row.unlocked">{{ row.def.desc }}</template>
@@ -107,10 +124,12 @@
   import type { ExploreMode, RegionDef } from '@/types'
   import { useAdventureStore } from '@/stores/adventure'
   import { usePlayerStore } from '@/stores/player'
+  import { useUiStore } from '@/stores/ui'
   import { REGIONS, regionDef, DANGER_NAMES } from '@/data/regions'
   import { REALMS } from '@/data/realms'
   import { EXPLORE_MODES } from '@/data/constants'
   import { startExploration } from '@/core/exploration'
+  import { stoneByTier } from '@/core/formulas'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatDuration, formatGN } from '@/utils/format'
@@ -121,6 +140,7 @@
 
   const adventure = useAdventureStore()
   const player = usePlayerStore()
+  const ui = useUiStore()
 
   const modeTarget = ref<RegionDef | null>(null)
 
@@ -135,10 +155,12 @@
   const regionRows = computed(() =>
     REGIONS.map(r => {
       const eco = regionEcology(r)
+      const suppressed = player.suppressedRegions.includes(r.id)
       return {
         def: r,
         unlocked: adventure.unlocked.includes(r.id),
         cleared: adventure.cleared.includes(r.id),
+        suppressed,
         tooHard: r.minRealm > player.major,
         // 第一层信息:只保留最强的两个生态标签
         chips: ecologyChips(eco).slice(0, 2),
@@ -176,5 +198,18 @@
 
   function prevRegionName(r: RegionDef): string {
     return r.requireCleared ? (regionDef(r.requireCleared)?.name ?? '') : ''
+  }
+
+  /** 解除镇压,恢复主动历练 */
+  function unsuppress(regionId: string): void {
+    player.unsuppressRegion(regionId)
+    const r = regionDef(regionId)
+    ui.toast(`你已解除对${r?.name ?? '此地'}的镇压,此方妖邪再度骚动`, 'info')
+  }
+
+  /** 镇压区域每小时灵石产出速率(展示给玩家) */
+  function rateText(r: RegionDef): string {
+    const yieldPerHour = stoneByTier(r.tier, 150) // SUPPRESS_YIELD_PER_HOUR.stoneMultiplier
+    return formatGN(yieldPerHour)
   }
 </script>

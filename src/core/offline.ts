@@ -3,7 +3,8 @@
  * 与在线 Tick 共用同一套公式,按封顶时长折算收益
  */
 import type { OfflineSummary } from '@/types'
-import { gn, mulN, sub } from '@/utils/gnum'
+import { gn, isZero, mulN, sub } from '@/utils/gnum'
+import { formatGN } from '@/utils/format'
 import { rng } from '@/utils/random'
 import { regionDef } from '@/data/regions'
 import { enemyDef } from '@/data/enemies'
@@ -26,6 +27,7 @@ import { acquireEquipment, afterWin } from './loot'
 import { autoResolveEvent } from './eventEngine'
 import { clearRegionAndUnlockNext } from './exploration'
 import { stoneByTier } from './formulas'
+import { settleSuppressedRegions } from './suppress'
 import { modOf } from './statsCalc'
 import { track } from './progress'
 import { equipmentTemplate } from '@/data/equipment'
@@ -71,6 +73,17 @@ export function settleOffline(nowMs: number): OfflineSummary | null {
   const oreBefore = resources.ore
   const wudaoBefore = resources.wudao
   dongfu.produce(effSec)
+
+  // ---- 镇压区域被动收益(不受离线效率折扣,是统治该区域的补偿) ----
+  const suppressYield = settleSuppressedRegions(dtSec)
+  if (suppressYield && !isZero(suppressYield.stone)) {
+    notes.push(`镇压诸域仍有余韵:灵石 +${formatGN(suppressYield.stone)}`)
+    if (suppressYield.equipment.length > 0) {
+      for (const eq of suppressYield.equipment) {
+        equipmentGained.push(eq)
+      }
+    }
+  }
 
   // ---- 历练挂机 ----
   let battles = 0

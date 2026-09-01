@@ -19,6 +19,7 @@ import { usePlayerStore } from '@/stores/player'
 import { useAdventureStore } from '@/stores/adventure'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useUiStore } from '@/stores/ui'
+import { checkSuppression } from './suppress'
 
 /** 区域是否可解锁(前置首领已清) */
 export function regionAvailable(regionId: string): boolean {
@@ -123,6 +124,17 @@ function runBattle(now: number): void {
     if (eDef.isBoss) {
       track('bossKills')
       clearRegionAndUnlockNext(region.id)
+    }
+
+    // Phase 30: 更新区域统计并判定镇压
+    const damageTakenPct = result.win ? 1 - result.playerHpPct : 1.0
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    player.updateRegionStats(region.id, result.win, result.rounds, damageTakenPct)
+    const suppressed = checkSuppression(player, region.id)
+    if (suppressed) {
+      player.suppressRegion(region.id)
+      ui.toast(`你已彻底镇压${region.name},此地将自动产出资源`, 'rare')
     }
   } else {
     cultivation.addBuff('injury', now)
