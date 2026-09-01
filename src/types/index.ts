@@ -9,6 +9,77 @@ export interface GNum {
   e: number
 }
 
+// ============ Phase 28 前期玩法 ============
+/** 悟道顿悟类型 */
+export type EnlightenmentType = 'cultivation' | 'combat' | 'breakthrough' | 'qi' | 'insight'
+
+/** 悟道顿悟选项 */
+export interface EnlightenmentOption {
+  type: EnlightenmentType
+  label: string
+  desc: string
+  buffId: string
+  /** 持续时间(秒) */
+  duration: number
+}
+
+/** 悟道顿悟实例(60秒窗口) */
+export interface EnlightenmentEvent {
+  id: string
+  options: EnlightenmentOption[]
+  /** 触发时间戳 */
+  triggeredAt: number
+  /** 过期时间戳(triggeredAt + 60s) */
+  expiresAt: number
+}
+
+/** 探索路线类型 */
+export type ExplorationRoute = 'safe' | 'risky' | 'dangerous'
+
+/** 探索路线配置 */
+export interface RouteConfig {
+  label: string
+  desc: string
+  safeMod: number
+  rewardMod: number
+  eventMod: number
+}
+
+/** 奇遇连锁状态(玩家已触发的连锁ID → 当前阶段) */
+export type EventChainState = Record<string, number>
+
+/** 洞府巡游小事件 */
+export interface CaveEvent {
+  id: string
+  location: 'field' | 'furnace' | 'library' | 'array' | 'garden'
+  title: string
+  desc: string
+  options: Array<{
+    label: string
+    effect: string
+    /** 奖励或惩罚 */
+    reward?: { type: 'exp' | 'stone' | 'herb' | 'wudao' | 'buff'; value: number | string }
+    penalty?: { type: 'cultivationSpeed' | 'qiMax'; value: number; duration: number }
+  }>
+  /** 触发时间戳 */
+  triggeredAt: number
+  expiresAt: number
+}
+
+/** 灵兽陪行功能类型 */
+export type BeastCompanionType = 'event' | 'safety' | 'loot'
+
+/** 突破准备选项 */
+export interface BreakthroughPrepOption {
+  id: string
+  label: string
+  desc: string
+  cost?: { stone?: number; pill?: string }
+  bonusRate: number
+  /** 耗时(秒),0表示立即 */
+  duration: number
+}
+
 // ============ 五行灵根 ============
 export type ElementId = 'metal' | 'wood' | 'water' | 'fire' | 'earth' | 'wind' | 'thunder' | 'ice' | 'light' | 'dark' | 'chaos'
 

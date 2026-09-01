@@ -14,6 +14,7 @@ import { useUiStore } from '@/stores/ui'
 import { tickExploration, stopExploration } from './exploration'
 import { settleOffline, sanitizeOfflineInputs } from './offline'
 import { checkStateAchievements, rolloverDailyIfNeeded } from './progress'
+import { mayTriggerEnlightenment, mayTriggerCaveEvent } from './earlyGameService'
 
 const PERIODIC_CHECK_SEC = 30
 
@@ -125,6 +126,8 @@ class GameEngine {
       cultivation.pruneBuffs(now)
       // 探索推进
       tickExploration(now)
+      // Phase 28: 悟道顿悟触发(修炼时随机)
+      mayTriggerEnlightenment()
       // 寿元流逝
       player.addAge((dt / 3600) * AGE_YEARS_PER_HOUR)
       this.checkDeath()
@@ -135,6 +138,8 @@ class GameEngine {
       this.periodicAccum = 0
       rolloverDailyIfNeeded()
       checkStateAchievements()
+      // Phase 28/29: 洞府巡游触发(每日一次)
+      mayTriggerCaveEvent()
     }
   }
 

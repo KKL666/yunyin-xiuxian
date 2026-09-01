@@ -13,7 +13,10 @@ export function encryptSave(plain: string): string {
 /** 解密失败返回 null */
 export function decryptSave(cipher: string): string | null {
   try {
-    const text = CryptoJS.AES.decrypt(cipher, SAVE_SECRET).toString(CryptoJS.enc.Utf8)
+    const wordArray = CryptoJS.AES.decrypt(cipher, SAVE_SECRET)
+    // 解密失败时 wordArray.sigBytes === 0,转 UTF-8 得空串或乱码
+    if (wordArray.sigBytes === 0) return null
+    const text = wordArray.toString(CryptoJS.enc.Utf8)
     return text.length > 0 ? text : null
   } catch {
     return null

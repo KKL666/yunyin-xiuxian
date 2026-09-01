@@ -36,6 +36,13 @@ export const usePlayerStore = defineStore(
     const dead = ref(false)
     const reincarnation = ref({ count: 0, daoFruit: 0, talents: [] as string[] })
 
+    // Phase 28 前期玩法状态
+    const eventChains = ref<Record<string, number>>({}) // 奇遇连锁进度
+    const winStreak = ref(0) // 当前连胜数
+    const lastCaveEventDay = ref(0) // 上次洞府巡游日期
+    const selectedRoute = ref<'safe' | 'risky' | 'dangerous'>('safe') // 当前探索路线
+    const companionBeastId = ref<string | null>(null) // 陪行灵兽
+
     // ---------- 境界 ----------
     const realm = computed(() => realmDef(major.value))
     const realmName = computed(() => realmLabel(major.value, sub.value))
@@ -183,6 +190,32 @@ export const usePlayerStore = defineStore(
       if (!Number.isFinite(sub.value) || sub.value < 0) sub.value = 0
     }
 
+    // Phase 28 前期玩法动作
+    function advanceEventChain(eventId: string): void {
+      const current = eventChains.value[eventId] ?? 0
+      eventChains.value = { ...eventChains.value, [eventId]: current + 1 }
+    }
+
+    function incrementWinStreak(): void {
+      winStreak.value += 1
+    }
+
+    function resetWinStreak(): void {
+      winStreak.value = 0
+    }
+
+    function setSelectedRoute(route: 'safe' | 'risky' | 'dangerous'): void {
+      selectedRoute.value = route
+    }
+
+    function setCompanionBeast(id: string | null): void {
+      companionBeastId.value = id
+    }
+
+    function markCaveEventToday(day: number): void {
+      lastCaveEventDay.value = day
+    }
+
     return {
       name,
       linggen,
@@ -195,6 +228,11 @@ export const usePlayerStore = defineStore(
       petId,
       dead,
       reincarnation,
+      eventChains,
+      winStreak,
+      lastCaveEventDay,
+      selectedRoute,
+      companionBeastId,
       realm,
       realmName,
       subName,
@@ -222,7 +260,13 @@ export const usePlayerStore = defineStore(
       addDaoFruit,
       markDead,
       rebirth,
-      sanitize
+      sanitize,
+      advanceEventChain,
+      incrementWinStreak,
+      resetWinStreak,
+      setSelectedRoute,
+      setCompanionBeast,
+      markCaveEventToday
     }
   },
   { persist: persistConfig('player') }

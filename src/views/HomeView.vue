@@ -62,6 +62,24 @@
       <span class="text-[11px] text-cinnabar">踏天 →</span>
     </RouterLink>
 
+    <!-- 修行目标:给方向,不替决定 -->
+    <div
+      v-if="currentGoal"
+      class="card-ink flex items-center gap-3 border-azure/30 px-4 py-2.5"
+    >
+      <span class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-azure/10 font-kai text-[14px] text-azure">目</span>
+      <span class="min-w-0 grow">
+        <span class="block text-[10px] tracking-[0.2em] text-ink-ghost">当前修行</span>
+        <span class="block truncate font-kai text-[13px] text-ink">{{ currentGoal.text }}</span>
+        <span v-if="currentGoal.progress !== undefined" class="mt-1 block">
+          <ProgressBar :value="currentGoal.progress" color="var(--color-azure)" :height="3" />
+        </span>
+      </span>
+      <span v-if="currentGoal.progress !== undefined" class="shrink-0 tabular text-[11px] text-ink-faint">
+        {{ Math.round(currentGoal.progress * 100) }}%
+      </span>
+    </div>
+
     <!-- 修炼状态 -->
     <div class="card-ink px-4 py-3.5">
       <div class="flex items-baseline justify-between">
@@ -141,6 +159,7 @@
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
   import { gongfaDef } from '@/data/gongfa'
   import { formatGN, formatNum, formatRate, formatYears } from '@/utils/format'
+  import { generateCurrentGoal } from '@/core/goal'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
@@ -160,6 +179,8 @@
   })
 
   const mainGongfaName = computed(() => (cultivation.mainGongfa ? (gongfaDef(cultivation.mainGongfa)?.name ?? '无名功法') : '未修功法'))
+
+  const currentGoal = computed(() => generateCurrentGoal(player))
 
   const mainQuest = computed(() => MAIN_QUESTS[quests.mainIdx])
 
