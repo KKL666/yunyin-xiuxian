@@ -10,7 +10,8 @@ import {
   DAO_FRUIT_SOFT_EXP,
   DIMINISH_KEYS,
   DIMINISH_WEIGHTS,
-  QI_RICH_BONUS
+  QI_RICH_BONUS,
+  SOFT_CAPS
 } from '@/data/constants'
 import { baseCombatStats, powerScore } from './formulas'
 
@@ -61,7 +62,22 @@ export function mergeMods(sources: StatMods[]): StatMods {
     }
     out[key] = sum
   }
+  // Phase 30.4 软阈值:合计越过 cap 后超出部分折算(极端堆叠的第二道防线)
+  for (const k in SOFT_CAPS) {
+    const key = k as AnyStatKey
+    const v = out[key]
+    const rule = SOFT_CAPS[key]
+    if (rule && typeof v === 'number' && v > rule.cap) {
+      out[key] = rule.cap + (v - rule.cap) * rule.diminish
+    }
+  }
   return out
+}
+
+/** 某键是否已进入软阈值递减区(展示层提示用) */
+export function isSoftCapped(mods: StatMods, key: AnyStatKey): boolean {
+  const rule = SOFT_CAPS[key]
+  return rule !== undefined && (mods[key] ?? 0) >= rule.cap
 }
 
 export function modOf(mods: StatMods, key: AnyStatKey): number {

@@ -109,17 +109,19 @@ export const DIMINISH_KEYS = [
 export const COMBAT_PLAYBACK_BASE_MS = 460
 export const COMBAT_PLAYBACK_MIN_MS = 90
 
-// ============ Phase 30.3 洞府灵脉投资 ============
-/** 灵脉总容量(点) */
-export const VEIN_TOTAL_CAPACITY = 100
-/** 主脉容量(独占) */
-export const VEIN_MAIN_CAPACITY = 70
-/** 副脉单条上限 */
-export const VEIN_SIDE_CAP = 30
-/** 每点投资灵石倍率(stoneByTier 按玩家层级) */
-export const VEIN_POINT_STONE = 25
-/** 灵脉开放境界(金丹) */
-export const VEIN_UNLOCK_MAJOR = 2
+// ============ Phase 30.4 属性软阈值 ============
+/**
+ * 第二道防线(第一道是 DIMINISH 同键多来源递减):
+ * 合计值越过 cap 后,超出部分按 diminish 折算。
+ * cap 取在"正常构筑达不到、极端堆叠才触及"的位置,不影响现行生态。
+ */
+export const SOFT_CAPS: Partial<Record<import('@/types').AnyStatKey, { cap: number; diminish: number }>> = {
+  critRate: { cap: 0.75, diminish: 0.5 },
+  dodgeRate: { cap: 0.55, diminish: 0.4 },
+  damageReduction: { cap: 0.55, diminish: 0.4 },
+  shieldOnStart: { cap: 0.8, diminish: 0.5 }
+}
+
 /**
  * 敌人相对玩家裸装的补偿系数:随层级渐进
  * 前期玩家装备寥寥,敌人偏弱;后期默认玩家已成体系
