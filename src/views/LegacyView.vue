@@ -58,6 +58,34 @@
       <p v-else class="py-4 text-center text-[11px] text-ink-ghost">此录尚白。天界之行,自会留名。</p>
     </div>
 
+    <!-- 征战录(Phase 30.9 S2):宿敌与雪耻 -->
+    <SectionTitle title="征战录" :hint="`宿敌 ${nemesisRows.length} 位`" />
+    <div class="card-ink divide-y divide-ink/6 px-4">
+      <template v-if="nemesisRows.length">
+        <p v-for="n in nemesisRows" :key="n.enemyId" class="flex items-center gap-2 py-2 text-[12px]">
+          <span class="font-kai text-[13px]" :class="n.avengedAt ? 'text-ink' : 'text-cinnabar'">{{ n.enemyName }}</span>
+          <span class="text-[10px] text-ink-faint">{{ n.regionName }} · 败我 {{ n.lossCount }} 次</span>
+          <span class="ml-auto shrink-0 text-[10px]" :class="n.avengedAt ? 'text-jade' : 'text-cinnabar/70'">
+            {{ n.avengedAt ? '已雪耻' : '尚为宿敌' }}
+          </span>
+        </p>
+      </template>
+      <p v-else class="py-4 text-center text-[11px] text-ink-ghost">尚无宿敌。此录待你的血与道来填。</p>
+    </div>
+
+    <!-- 行迹录(Phase 30.9 S3):事件余波 -->
+    <SectionTitle title="行迹录" :hint="`际遇回响 ${lossRows.length} 则`" />
+    <div class="card-ink divide-y divide-ink/6 px-4">
+      <template v-if="lossRows.length">
+        <p v-for="l in lossRows" :key="l.eventId + l.at" class="flex items-center gap-2 py-2 text-[12px]">
+          <span class="text-[10px] text-ink-ghost">{{ formatDate(l.at) }}</span>
+          <span class="text-ink-soft">{{ l.eventName }}</span>
+          <span class="ml-auto shrink-0 text-[10px] text-ink-faint">{{ l.note }}</span>
+        </p>
+      </template>
+      <p v-else class="py-4 text-center text-[11px] text-ink-ghost">世界尚未记住你的足迹。</p>
+    </div>
+
     <!-- 我的纪录 -->
     <SectionTitle title="我的纪录" hint="只与过去的自己比" />
     <div class="card-ink divide-y divide-ink/6 px-4">
@@ -76,10 +104,45 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { useEndgameStore } from '@/stores/endgame'
+  import { usePlayerStore } from '@/stores/player'
+  import { useAdventureStore } from '@/stores/adventure'
   import { cultivatorProfile, MILESTONE_DEFS, milestoneDef, RECORD_DEFS } from '@/core/identity'
+  import { regionDef } from '@/data/regions'
+  import { eventDef } from '@/data/events'
+  import { isNemesis } from '@/core/worldMemory'
+  import { formatDate } from '@/utils/time'
   import SectionTitle from '@/components/common/SectionTitle.vue'
 
   const endgame = useEndgameStore()
+  const player = usePlayerStore()
+  const adventure = useAdventureStore()
+
+  /** 征战录:当前未雪耻/已雪耻的宿敌 */
+  const nemesisRows = computed(() =>
+    player.nemeses
+      .filter(n => n.lossCount >= 3)
+      .map(n => ({
+        ...n,
+        regionName: regionDef(n.regionId)?.name ?? n.regionId,
+        avengedAt: n.avengedAt,
+        active: isNemesis(player.nemeses, n.enemyId)
+      }))
+      .sort((a, b) => (a.avengedAt ?? 0) - (b.avengedAt ?? 0))
+  )
+
+  /** 征战录:事件余波(世界记忆的最近完成) */
+  const lossRows = computed(() =>
+    Object.values(adventure.eventMemories)
+      .filter(m => m.times >= 2)
+      .map(m => ({
+        eventId: m.eventId,
+        at: m.lastAt,
+        eventName: eventDef(m.eventId)?.title ?? m.eventId,
+        note: `${m.times} 次际遇后,此地已别有风貌`
+      }))
+      .sort((a, b) => b.at - a.at)
+      .slice(0, 8)
+  )
 
   const profile = computed(() => cultivatorProfile(endgame.marks))
 

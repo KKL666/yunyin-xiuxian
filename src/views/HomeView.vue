@@ -32,18 +32,11 @@
             {{ statusText }}
           </p>
         </div>
-        <!-- 打坐人影 · 灵气法阵环绕 -->
-        <div class="relative mr-1 mt-1 h-24 w-20">
-          <span class="qi-ring inset-x-0 top-6 bottom-1 text-azure/35 animate-spin-slow" />
-          <span class="qi-ring -inset-x-2 top-4 -bottom-1 text-cinnabar/20 animate-spin-slower" />
-          <svg class="relative h-24 w-20 text-ink/70 animate-breathe" viewBox="0 0 80 100">
-            <circle cx="40" cy="26" r="11" fill="currentColor" />
-            <path
-              d="M40 38 Q18 44 14 74 Q13 80 20 80 L26 80 Q20 88 30 89 L50 89 Q60 88 54 80 L60 80 Q67 80 66 74 Q62 44 40 38 Z"
-              fill="currentColor"
-            />
-            <path d="M12 84 Q40 76 68 84 Q40 92 12 84 Z" fill="currentColor" opacity="0.5" />
-          </svg>
+        <!-- 修炼法球 · 灵气法阵环绕 -->
+        <div class="relative mr-1 -mt-1 h-35 w-35">
+          <CultivationOrb :active="true" :full="player.expFull" :progress="player.expProgress">
+            <span class="text-[17px]">☯</span>
+          </CultivationOrb>
         </div>
       </div>
     </div>
@@ -63,10 +56,7 @@
     </RouterLink>
 
     <!-- 修行目标:给方向,不替决定 -->
-    <div
-      v-if="currentGoal"
-      class="card-ink flex items-center gap-3 border-azure/30 px-4 py-2.5"
-    >
+    <div v-if="currentGoal" class="card-ink flex items-center gap-3 border-azure/30 px-4 py-2.5">
       <span class="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-azure/10 font-kai text-[14px] text-azure">目</span>
       <span class="min-w-0 grow">
         <span class="block text-[10px] tracking-[0.2em] text-ink-ghost">当前修行</span>
@@ -78,32 +68,6 @@
       <span v-if="currentGoal.progress !== undefined" class="shrink-0 tabular text-[11px] text-ink-faint">
         {{ Math.round(currentGoal.progress * 100) }}%
       </span>
-    </div>
-
-    <!-- 修炼状态 -->
-    <div class="card-ink px-4 py-3.5">
-      <div class="flex items-baseline justify-between">
-        <p class="font-kai text-[13px] tracking-[0.25em] text-ink-soft">《{{ mainGongfaName }}》运转中</p>
-        <RouterLink v-if="player.expFull" to="/cultivation" class="font-kai text-[12px] text-cinnabar animate-breathe">可突破 →</RouterLink>
-      </div>
-      <div class="mt-3 space-y-3">
-        <div>
-          <div class="mb-1 flex justify-between text-[11px] text-ink-faint tabular">
-            <span>修为</span>
-            <span>{{ formatGN(player.exp) }} / {{ formatGN(player.expReq) }} · +{{ formatRate(player.cultPerSec) }}</span>
-          </div>
-          <ProgressBar :value="player.expProgress" color="var(--color-cinnabar)" :height="7" />
-        </div>
-        <div>
-          <div class="mb-1 flex justify-between text-[11px] text-ink-faint tabular">
-            <span>灵气</span>
-            <span>
-              {{ formatNum(Math.floor(resources.qi)) }} / {{ formatNum(player.qiCapValue) }} · +{{ formatRate(player.qiRegenPerSec) }}
-            </span>
-          </div>
-          <ProgressBar :value="resources.qi / Math.max(1, player.qiCapValue)" color="var(--color-azure)" :height="7" />
-        </div>
-      </div>
     </div>
 
     <!-- 材料一览 -->
@@ -160,14 +124,14 @@
   import { useQuestsStore } from '@/stores/quests'
   import { BUILDINGS } from '@/data/buildings'
   import { DAILY_TASKS, MAIN_QUESTS } from '@/data/quests'
-  import { gongfaDef } from '@/data/gongfa'
-  import { formatGN, formatNum, formatRate, formatYears } from '@/utils/format'
+  import { formatNum, formatYears } from '@/utils/format'
   import { generateCurrentGoal } from '@/core/goal'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
   import BuildingCard from '@/components/dongfu/BuildingCard.vue'
   import VeinInvestCard from '@/components/dongfu/VeinInvestCard.vue'
+  import CultivationOrb from '@/components/common/CultivationOrb.vue'
 
   const player = usePlayerStore()
   const resources = useResourcesStore()
@@ -181,8 +145,6 @@
     if (cultivation.hasBuff('injury')) return '疗伤中'
     return '闭关修炼中'
   })
-
-  const mainGongfaName = computed(() => (cultivation.mainGongfa ? (gongfaDef(cultivation.mainGongfa)?.name ?? '无名功法') : '未修功法'))
 
   const currentGoal = computed(() => generateCurrentGoal(player))
 

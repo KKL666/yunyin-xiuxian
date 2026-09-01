@@ -2,6 +2,10 @@
   <BaseModal :open="open" :closable="false" :title="result ? '际遇' : (def?.title ?? '际遇')">
     <!-- 抉择阶段 -->
     <template v-if="!result && def">
+      <!-- 世界记忆:余波文本(曾经完成过的事件,再次遭遇时概率出现) -->
+      <p v-if="aftermath" class="mb-2 border-l-2 border-gold-ink/60 pl-2 text-[11px] text-gold-ink">
+        {{ aftermath }}
+      </p>
       <p class="text-[13px] leading-relaxed text-ink-soft">{{ def.text }}</p>
       <div class="mt-4 space-y-2">
         <button
@@ -38,6 +42,7 @@
   import { eventDef } from '@/data/events'
   import { choiceAvailable, resolveEventChoice, type EventResolution } from '@/core/eventEngine'
   import { afterEventResolved } from '@/core/exploration'
+  import { aftermathText, shouldTriggerAftermath } from '@/core/worldMemory'
   import BaseModal from '@/components/common/BaseModal.vue'
 
   const adventure = useAdventureStore()
@@ -47,6 +52,17 @@
   const def = computed(() => (adventure.pendingEventId ? eventDef(adventure.pendingEventId) : undefined))
   const tier = computed(() => adventure.currentRegion?.tier ?? 1)
   const open = computed(() => def.value !== undefined || result.value !== null)
+
+  /** 世界记忆:此事件是否已完过,若是则按概率决定余波文案 */
+  const aftermath = computed<string | null>(() => {
+    if (!def.value || result.value) return null
+    const mem = adventure.eventMemories[def.value.id]
+    if (!mem) return null
+    // 打开时由事件 id 的确定性 hash 决定(同一事件在整个会话内行为一致)
+    const roll = ((def.value.id.length * 31 + def.value.id.charCodeAt(0) * 7) % 100) / 100
+    if (!shouldTriggerAftermath(adventure.eventMemories, def.value.id, roll)) return null
+    return aftermathText(def.value.title, mem.times >= 3 ? 'good' : mem.times >= 2 ? 'echo' : 'silence')
+  })
 
   function choose(idx: number): void {
     if (!def.value) return

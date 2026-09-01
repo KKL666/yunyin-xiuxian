@@ -7,6 +7,7 @@
 
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
+import { useUiStore } from '@/stores/ui'
 import { regionDef } from '@/data/regions'
 import { stoneByTier } from '@/core/formulas'
 import { generateEquipment } from '@/core/equipGen'
@@ -15,6 +16,7 @@ import { rng } from '@/utils/random'
 import { gnZero, add } from '@/utils/gnum'
 import type { GNum, QualityId } from '@/types'
 import { equipmentTemplate } from '@/data/equipment'
+import { deriveProsperity, isReviving, prosperityYieldMult } from './worldMemory'
 
 /** 区域统计数据(使用指数移动平均) */
 export interface RegionStats {
@@ -72,13 +74,38 @@ export function settleSuppressedRegions(dt: number): SuppressedYield | null {
 
   const hours = dt / 3600
   const total: SuppressedYield = { stone: gnZero(), equipment: [] }
+  const now = Date.now()
 
+  // Phase 30.9:复苏判定 —— 镇压超过 72h 无活动,区域妖气再聚,自动解除镇压
+  const revived: string[] = []
   for (const regionId of player.suppressedRegions) {
+    if (isReviving(player.suppressedSince[regionId], now)) revived.push(regionId)
+  }
+  if (revived.length > 0) {
+    for (const regionId of revived) player.unsuppressRegion(regionId)
+    const names = revived.map(id => regionDef(id)?.name ?? id).join('、')
+    useUiStore().toast(`${names}妖气复聚,镇压松动——此地重新成为历练之地`, 'info')
+    // 复苏后本 tick 不再为这些区域结算
+  }
+  const active = player.suppressedRegions.filter(id => !revived.includes(id))
+  if (active.length === 0) return null
+
+  for (const regionId of active) {
     const region = regionDef(regionId)
     if (!region) continue
 
-    // 灵石产出:基础倍率 × 区域阶位 × 时间
-    const stoneYield = stoneByTier(region.tier, SUPPRESS_YIELD_PER_HOUR.stoneMultiplier * hours)
+    // Phase 30.9:长期安稳 → 灵脉渐复(收益 99%);繁盛 → 商旅(100%)
+    const recall = deriveProsperity({
+      totalWins: player.regionStats[regionId]?.totalFights ?? 0,
+      hasSuppressed: true,
+      suppressedAt: player.suppressedSince[regionId],
+      lastActivityAt: player.regionStats[regionId]?.lastUpdateAt ?? now,
+      now
+    })
+    const yieldMult = prosperityYieldMult(recall.prosperity)
+
+    // 灵石产出:基础倍率 × 区域阶位 × 时间 × 兴衰微调
+    const stoneYield = stoneByTier(region.tier, SUPPRESS_YIELD_PER_HOUR.stoneMultiplier * hours * yieldMult)
     resources.addStone(stoneYield)
     total.stone = add(total.stone, stoneYield)
 

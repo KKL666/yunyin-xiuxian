@@ -13,13 +13,16 @@
     </div>
 
     <template v-else>
-      <!-- 道源 -->
-      <div class="card-ink flex items-center justify-between px-4 py-3">
+      <!-- 道源(Phase 30.9:生命周期标签 + 用途说明入口) -->
+      <div class="card-ink flex items-center justify-between gap-2 px-4 py-3">
         <p class="font-kai text-[15px] tracking-[0.3em] text-ink">天 界</p>
-        <p class="tabular text-[13px] text-ink-soft">
-          道源
-          <span class="font-kai text-[17px] text-cinnabar">{{ formatNum(endgame.daoSource) }}</span>
-        </p>
+        <div class="flex items-center gap-2">
+          <span class="chip-ink border-cinnabar/50 text-[9px] text-cinnabar">此世消耗</span>
+          <button class="text-left" @click="openDaoSourceDialog()">
+            <span class="block text-[10px] leading-tight text-ink-ghost">叩问天道·试一试</span>
+            <span class="block tabular font-kai text-[17px] leading-tight text-cinnabar">{{ formatNum(endgame.daoSource) }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- 页签:长卷分册 -->
@@ -80,11 +83,19 @@
                 {{ formatGN(furnaceStoneCost()) }} → 5 道源
               </button>
             </div>
-            <div class="flex items-center justify-between py-2.5">
-              <span class="text-[12px] text-ink-soft">道源凝道果(受软上限约束)</span>
-              <button class="btn-ghost px-3! py-1! text-[11px]! tabular" @click="condenseDaoFruit()">
-                {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
-              </button>
+            <div class="py-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[12px] text-ink-soft">道源凝道果(跨世保留)</span>
+                <button class="btn-ghost px-3! py-1! text-[11px]! tabular" @click="condenseDaoFruit()">
+                  {{ DAO_SOURCE_PER_FRUIT }} 道源 → 道果 +1
+                </button>
+              </div>
+              <!-- S3 链路:本次凝聚后,下世收益变化 -->
+              <p class="mt-1 text-[10px] leading-relaxed text-ink-faint tabular">
+                当前 {{ fruitInfo.total }} 枚 · 有效 {{ fruitInfo.effective.toFixed(0) }} 枚
+                <span class="text-gold-ink">→ 凝后 {{ fruitInfo.nextEffective.toFixed(0) }} 枚(+{{ fruitInfo.deltaPct }}%)</span>
+                · 边际收益渐减
+              </p>
             </div>
           </div>
         </section>
@@ -493,11 +504,55 @@
         <button class="btn-seal w-full" @click="expedition = null">收 卷</button>
       </template>
     </BaseModal>
+
+    <!-- Phase 30.9 S2:道源说明弹窗 -->
+    <BaseModal :open="daoSourceDialogOpen" title="道源" @close="daoSourceDialogOpen = false">
+      <div class="space-y-3 text-[12px] leading-relaxed">
+        <p class="text-ink-soft">{{ daoSourceDialog().intro }}</p>
+        <div>
+          <p class="font-kai text-[12px] tracking-wider text-ink">用途</p>
+          <p class="text-ink-faint">{{ daoSourceDialog().usages.join(' · ') }}</p>
+        </div>
+        <div>
+          <p class="font-kai text-[12px] tracking-wider text-ink">获取</p>
+          <p class="text-ink-faint">{{ daoSourceDialog().gains.join(' · ') }}</p>
+        </div>
+        <p class="border-l-2 border-cinnabar/60 pl-2 text-[11px] text-cinnabar">
+          {{ daoSourceDialog().lifecycle }}
+        </p>
+      </div>
+      <template #footer>
+        <button class="btn-seal w-full" @click="daoSourceDialogOpen = false">知道了</button>
+      </template>
+    </BaseModal>
+
+    <!-- Phase 30.9 S4:首次登真仙·终局导览 -->
+    <BaseModal :open="tutorialOpen" title="登临真仙" :closable="false">
+      <div class="space-y-2.5 text-[13px] leading-relaxed">
+        <p class="font-kai text-ink">凡间所得,终有尽时。</p>
+        <p class="text-ink-soft">玄铁、残页、灵石……到了此境,皆可献入<a
+          class="text-azure"
+          @click="tutorialOpen = false"
+        >天道熔炉</a>,熔作道源。</p>
+        <p class="text-ink-soft">
+          道源,助你<b class="text-cinnabar">此世</b>问道——叩天界、立契约、踏试炼。
+        </p>
+        <p class="text-ink-soft">
+          道源又可凝作道果,道果随神魂不灭,助你<b class="text-violet-ink">来世</b>更进一步。
+        </p>
+        <p class="mt-2 text-[11px] text-ink-faint">
+          一句话:<span class="text-cinnabar">道源是此世拿来折腾的</span>,<span class="text-violet-ink">道果是几世以后仍受益的财富</span>。
+        </p>
+      </div>
+      <template #footer>
+        <button class="btn-seal w-full" @click="tutorialOpen = false">知道了</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { useResourcesStore } from '@/stores/resources'
   import { usePlayerStore } from '@/stores/player'
   import { useInventoryStore } from '@/stores/inventory'
@@ -551,6 +606,7 @@
   import InkTabs from '@/components/common/InkTabs.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import { daoSourceDialog, fruitMarginalInfo, shouldShowEndgameTutorial, markEndgameTutorialSeen, markResourceDialogSeen } from '@/core/resourceGuidance'
 
   const resources = useResourcesStore()
   const player = usePlayerStore()
@@ -558,6 +614,26 @@
   const endgame = useEndgameStore()
 
   const unlocked = computed(() => endgameUnlocked())
+
+  // Phase 30.9:道源说明弹窗 / 道果链路 / 首次终局教学
+  const daoSourceDialogOpen = ref(false)
+  const tutorialOpen = ref(false)
+  const fruitInfo = computed(() => fruitMarginalInfo())
+  // 首次进入天界(已解锁且未见过教学):自动弹终局导览
+  watch(
+    () => unlocked.value,
+    v => {
+      if (v && shouldShowEndgameTutorial()) {
+        tutorialOpen.value = true
+        markEndgameTutorialSeen()
+      }
+    },
+    { immediate: true }
+  )
+  function openDaoSourceDialog(): void {
+    daoSourceDialogOpen.value = true
+    markResourceDialogSeen()
+  }
   const currentDao = computed(() => (endgame.daoPath ? daoPathDef(endgame.daoPath) : undefined))
 
   // ---- 页签:长卷分册(远征在途时落在远征册) ----

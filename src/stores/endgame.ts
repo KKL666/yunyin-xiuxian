@@ -50,6 +50,11 @@ export const useEndgameStore = defineStore(
     /** 极限纪录(Phase 28):只与过去的自己比 */
     const records = ref<Record<string, { value: number; life: number; note: string }>>({})
 
+    // Phase 30.9 道源/道果认知:一次性教学标记(终局导览 / 道果解释 / 资源说明已阅)
+    const endgameTutorialSeen = ref(false)
+    const daoFruitTutorialSeen = ref(false)
+    const resourceDialogSeen = ref(false)
+
     const totalClears = computed(
       () =>
         Object.values(worldClears.value).reduce((s, n) => s + n, 0) + Object.values(trialRecords.value).reduce((s, r) => s + r.clears, 0)
@@ -126,6 +131,9 @@ export const useEndgameStore = defineStore(
       dailyDoneDay,
       milestones,
       records,
+      endgameTutorialSeen,
+      daoFruitTutorialSeen,
+      resourceDialogSeen,
       totalClears,
       chooseDao,
       addDaoSource,

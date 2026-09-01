@@ -48,6 +48,9 @@
 
     <div class="grow" />
     <button class="btn-seal mt-8 w-full py-3! text-[16px]" @click="begin">踏 入 仙 途</button>
+
+    <!-- 灵根鉴定动画(踏入仙途后播放) -->
+    <SpiritRootReveal ref="revealRef" />
   </div>
 </template>
 
@@ -69,6 +72,7 @@
   import { useInventoryStore } from '@/stores/inventory'
   import { useUiStore } from '@/stores/ui'
   import GameIcon from '@/components/common/GameIcon.vue'
+  import SpiritRootReveal from '@/components/common/SpiritRootReveal.vue'
 
   const router = useRouter()
   const game = useGameStore()
@@ -80,6 +84,7 @@
   const name = ref(randomDaoName(rng))
   const profile = ref(rollLinggen(rng))
   const rerollsLeft = ref(CREATE_REROLL_LIMIT)
+  const revealRef = ref<InstanceType<typeof SpiritRootReveal> | null>(null)
 
   function reroll(): void {
     if (rerollsLeft.value <= 0) return
@@ -105,6 +110,9 @@
     game.markStarted()
     trackRealm()
     ui.toast('云深不知处,仙路自此始', 'rare')
-    void router.push('/')
+    // 灵根鉴定动画:随机闪现所有灵根品阶,最后定格真实灵根(gradeName)
+    revealRef.value?.show(profile.value.gradeName, () => {
+      void router.push('/')
+    })
   }
 </script>

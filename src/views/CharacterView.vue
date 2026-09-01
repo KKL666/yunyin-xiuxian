@@ -118,6 +118,7 @@
       <span class="min-w-0 grow">
         <span class="block font-kai text-[14px] tracking-[0.25em] text-ink">轮 回</span>
         <span class="block text-[10px] text-ink-faint tabular">
+          <span class="chip-ink mr-1 border-violet-ink/50 text-[9px] text-violet-ink">永久积累</span>
           道果 {{ player.reincarnation.daoFruit }} · 天赋 {{ ownedTalents.length }} 项
         </span>
       </span>
@@ -127,8 +128,19 @@
     <!-- 轮回弹窗 -->
     <BaseModal :open="rebirthOpen" title="轮回" @close="rebirthOpen = false">
       <p class="flex justify-between text-[12px]">
-        <span class="text-ink-soft">道果(每枚:修行 +3%,道躯 +1.5%)</span>
+        <span class="text-ink-soft">
+          道果
+          <span class="ml-1 text-[10px] text-violet-ink">【永久积累】</span>
+          <span class="block text-[10px] text-ink-faint">每枚:修行 +3%,道躯 +1.5%;转世保留</span>
+        </span>
         <span class="tabular font-kai text-[15px] text-cinnabar">{{ player.reincarnation.daoFruit }}</span>
+      </p>
+      <!-- S3 道果收益:有效值与软上限白话 -->
+      <p class="mt-1 text-[11px] text-ink-faint tabular">
+        有效收益
+        <span class="text-gold-ink">{{ fruitInfo.effective.toFixed(0) }} 枚</span>
+        (边际渐减)·
+        {{ fruitInfo.total > 0 ? `当前修行 +${Math.round(fruitInfo.effective * 3)}%` : '' }}
       </p>
       <div class="mt-2 flex flex-wrap gap-1.5">
         <span
@@ -169,6 +181,7 @@
   import { detectBuild } from '@/core/buildDetect'
   import { useLoadoutsStore } from '@/stores/loadouts'
   import { modOf } from '@/core/statsCalc'
+  import { fruitMarginalInfo } from '@/core/resourceGuidance'
   import { formatGN, formatPercent, formatYears } from '@/utils/format'
   import type { AnyStatKey } from '@/types'
   import { STAT_NAMES } from '@/ui/statNames'
@@ -176,6 +189,9 @@
   import BaseModal from '@/components/common/BaseModal.vue'
 
   const player = usePlayerStore()
+
+  /** S3 道果链路:有效收益与软上限白话 */
+  const fruitInfo = computed(() => fruitMarginalInfo())
   const quests = useQuestsStore()
   const ui = useUiStore()
   const loadouts = useLoadoutsStore()

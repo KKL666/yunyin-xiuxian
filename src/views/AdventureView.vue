@@ -25,8 +25,17 @@
             <div class="min-w-0 grow">
               <p class="flex items-center gap-2">
                 <span class="font-kai text-[15px] tracking-wider text-ink">{{ row.def.name }}</span>
-                <span v-if="row.suppressed" class="chip-ink border-gold-ink/60 text-[9px] text-gold-ink">已镇压</span>
+                <span v-if="row.suppressed && !row.revived" class="chip-ink border-gold-ink/60 text-[9px] text-gold-ink">已镇压</span>
+                <span v-else-if="row.revived" class="chip-ink border-cinnabar/60 text-[9px] text-cinnabar">妖气复聚</span>
                 <span v-else-if="row.cleared" class="chip-ink border-jade/60 text-[9px] text-jade">已靖</span>
+                <!-- 世界记忆(Phase 30.9):区域兴衰状态 -->
+                <span
+                  v-if="!row.suppressed && row.recall.prosperity !== 'chaos'"
+                  class="chip-ink text-[9px]"
+                  :class="row.recall.prosperity === 'flourish' ? 'border-azure/60 text-azure' : 'border-jade/60 text-jade'"
+                >
+                  {{ prosperityName(row.recall.prosperity) }}
+                </span>
               </p>
               <p class="mt-0.5 text-[11px] text-ink-faint">
                 {{ REALMS[row.def.minRealm]?.name }}境相宜 ·
@@ -34,7 +43,7 @@
                 <span v-if="row.tooHard" class="ml-1 text-cinnabar">· 境界尚浅,恐有性命之忧</span>
               </p>
             </div>
-            <button v-if="row.unlocked && !row.suppressed" class="btn-seal shrink-0 px-4! py-2! text-[13px]!" @click="chooseMode(row.def)">出发</button>
+            <button v-if="row.unlocked && (!row.suppressed || row.revived)" class="btn-seal shrink-0 px-4! py-2! text-[13px]!" @click="chooseMode(row.def)">出发</button>
             <div v-else-if="row.suppressed" class="shrink-0 text-right">
               <span class="block text-[11px] text-gold-ink">
                 自动产出中 · {{ rateText(row.def) }}/时
@@ -130,6 +139,7 @@
   import { EXPLORE_MODES } from '@/data/constants'
   import { startExploration } from '@/core/exploration'
   import { stoneByTier } from '@/core/formulas'
+  import { regionRecallFor, prosperityName, isReviving } from '@/core/worldMemory'
   import { detectBuild } from '@/core/buildDetect'
   import { detectionAdaptation, ecologyChips, ECO_LEVEL_NAMES, recommendForRegion, regionEcology, starsText } from '@/core/buildAdvisor'
   import { formatDuration, formatGN } from '@/utils/format'
@@ -156,11 +166,15 @@
     REGIONS.map(r => {
       const eco = regionEcology(r)
       const suppressed = player.suppressedRegions.includes(r.id)
+      const recall = regionRecallFor(r.id)
+      const revived = suppressed && isReviving(player.suppressedSince[r.id], Date.now())
       return {
         def: r,
         unlocked: adventure.unlocked.includes(r.id),
         cleared: adventure.cleared.includes(r.id),
         suppressed,
+        revived,
+        recall,
         tooHard: r.minRealm > player.major,
         // 第一层信息:只保留最强的两个生态标签
         chips: ecologyChips(eco).slice(0, 2),

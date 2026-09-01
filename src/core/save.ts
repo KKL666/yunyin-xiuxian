@@ -57,11 +57,12 @@ export function importSaveText(text: string): string | null {
 
 /**
  * 封存写盘:页面即将卸载时,丢弃一切后续 localStorage 写入。
- * persist 插件的 $subscribe 走 Vue 调度器(微任务批量刷盘)——清档之后、卸载之前,
+ * persist 插件的 $subscribe 走 Vue 调度器(微任务批量刷盘)——清档/导入之后、卸载之前,
  * 排队中的持久化仍会执行并把内存状态回写进 localStorage(实测栈:persistState → flushJobs)。
  * 拦截 mutation 源头不可穷尽,直接在写盘层截断
+ * 注意:必须在「导入写盘完成之后」调用——它会把 setItem 置为 noop,先调用会吞掉导入的写入
  */
-function sealStorageWrites(): void {
+export function sealStorageWrites(): void {
   try {
     Object.defineProperty(window.localStorage, 'setItem', { value: () => undefined, configurable: true })
   } catch {
@@ -85,5 +86,8 @@ export function resetGame(): void {
 export function reloadGame(): void {
   engine.stop()
   sealStorageWrites()
+  // 直接落到主页:导入的存档 game.started=true,守卫对 home 放行;
+  // 若导入异常(started 为 false),守卫仍会兜底转回 welcome
+  window.location.hash = '#/'
   window.location.reload()
 }

@@ -143,6 +143,7 @@ export const useInventoryStore = defineStore(
       artifacts,
       equippedArtifacts,
       equippedItems,
+      equippedUids,
       bagItems,
       bagFull,
       equipFlats,

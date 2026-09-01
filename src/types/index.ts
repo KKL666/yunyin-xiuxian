@@ -432,6 +432,49 @@ export interface EventChoice {
   isDefault?: boolean
 }
 
+/** 区域兴衰状态(Phase 30.9 S1):混乱 → 稳定 → 繁盛 */
+export type RegionProsperity = 'chaos' | 'stable' | 'flourish'
+
+/** 区域兴衰状态详情(派生 + 可写入) */
+export interface RegionRecall {
+  /** 状态 */
+  prosperity: RegionProsperity
+  /** 本次状态自何时起 */
+  since: number
+  /** 区域累计胜场(用于派生状态) */
+  totalWins: number
+  /** 是否曾被镇压过(镇压史) */
+  hasSuppressed: boolean
+  /** 镇压时间戳(仍处镇压中) */
+  suppressedAt?: number
+}
+
+/** 宿敌记录(Phase 30.9 S2):同一敌人败我 ≥3 次 */
+export interface NemesisRecord {
+  enemyId: string
+  enemyName: string
+  regionId: string
+  /** 玩家被击败次数 */
+  lossCount: number
+  /** 最后一次败北时间 */
+  lastLossAt: number
+  /** 首次雪耻时间(击败宿敌) */
+  avengedAt?: number
+}
+
+/** 世界事件记忆(Phase 30.9 S3):已完事件的结果记录 */
+export interface EventMemory {
+  eventId: string
+  /** 完成次数 */
+  times: number
+  /** 最近一次完成时间 */
+  lastAt: number
+  /** 最近一次的选择索引 */
+  lastChoiceIdx: number
+  /** 若事件有后续(余波)变体,标记已触发 */
+  aftermathSeen: boolean
+}
+
 export interface EventDef {
   id: string
   title: string

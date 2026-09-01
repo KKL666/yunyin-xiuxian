@@ -27,83 +27,62 @@ const BPM = 52
 const LOOP_END = '26:0:0'
 
 type NoteEvent = [time: string, note: string, dur: string]
-type ChordEvent = [time: string, notes: string[], dur: string]
 
 /**
- * 古筝主旋律(D 宫调式,级进为主):
- * 前奏疏朗铺陈 → 主歌中音区叙事 → 副歌级进登高、长音收句 → 尾声下行送归,收于宫
+ * 演奏法标记(作曲层,非节拍层):
+ * lyr=拉长飘起(高音长音,余音袅袅) · stc=顿挫(低音短音,如墨点皴)
+ * rise=上行渐强 · fall=下行渐弱(乐句走向的力度层次)
+ * 应用于 MELODY 的时值弹性与力度塑形
  */
-const MELODY: NoteEvent[] = [
-  // 前奏(古筝独奏)
-  ['0:0:0', 'A3', '2n'],
-  ['0:2:0', 'D4', '2n'],
-  ['1:0:0', 'E4', '4n'],
-  ['1:1:0', 'F#4', '4n'],
-  ['1:2:0', 'E4', '4n'],
-  ['1:3:0', 'D4', '4n'],
-  ['2:0:0', 'B3', '2n'],
-  ['2:2:0', 'A3', '2n'],
-  ['3:0:0', 'D4', '1n'],
-  // 主歌 A
-  ['4:0:0', 'D4', '4n.'],
-  ['4:1:2', 'E4', '8n'],
-  ['4:2:0', 'F#4', '2n'],
-  ['5:0:0', 'A4', '4n'],
-  ['5:1:0', 'F#4', '4n'],
-  ['5:2:0', 'E4', '2n'],
-  ['6:0:0', 'E4', '4n.'],
-  ['6:1:2', 'F#4', '8n'],
-  ['6:2:0', 'E4', '4n'],
-  ['6:3:0', 'D4', '4n'],
-  ['7:0:0', 'B3', '4n'],
-  ['7:1:0', 'A3', '2n.'],
-  ['7:3:2', 'E4', '16n'], // 倚音引句
-  ['8:0:0', 'D4', '4n.'],
-  ['8:1:2', 'E4', '8n'],
-  ['8:2:0', 'F#4', '2n'],
-  ['9:0:0', 'A4', '4n'],
-  ['9:1:0', 'B4', '4n'],
-  ['9:2:0', 'A4', '2n'],
-  ['10:0:0', 'F#4', '4n'],
-  ['10:1:0', 'E4', '4n'],
-  ['10:2:0', 'D4', '4n'],
-  ['10:3:0', 'E4', '4n'],
-  ['11:0:0', 'D4', '1n'],
-  // 副歌 B(级进登高,长音收句)
-  ['12:0:0', 'A4', '2n'],
-  ['12:2:0', 'B4', '4n'],
-  ['12:3:0', 'D5', '4n'],
-  ['13:0:0', 'D5', '2n'],
-  ['13:2:0', 'E5', '4n'],
-  ['13:3:0', 'D5', '4n'],
-  ['14:0:0', 'B4', '4n.'],
-  ['14:1:2', 'A4', '8n'],
-  ['14:2:0', 'B4', '4n'],
-  ['14:3:0', 'D5', '4n'],
-  ['15:0:0', 'A4', '1n'],
-  ['16:0:0', 'B4', '2n'],
-  ['16:2:0', 'D5', '4n'],
-  ['16:3:0', 'E5', '4n'],
-  ['17:0:0', 'D5', '4n.'],
-  ['17:1:2', 'B4', '8n'],
-  ['17:2:0', 'A4', '2n'],
-  ['18:0:0', 'F#4', '4n'],
-  ['18:1:0', 'A4', '4n'],
-  ['18:2:0', 'B4', '4n'],
-  ['18:3:0', 'A4', '4n'],
-  ['19:0:0', 'D5', '1n'],
-  // 尾声(级进回落)
-  ['20:0:0', 'B4', '2n'],
-  ['20:2:0', 'A4', '4n'],
-  ['20:3:0', 'F#4', '4n'],
-  ['21:0:0', 'E4', '2n'],
-  ['21:2:0', 'F#4', '4n'],
-  ['21:3:0', 'E4', '4n'],
-  ['22:0:0', 'A3', '4n'],
-  ['22:1:0', 'B3', '4n'],
-  ['22:2:0', 'D4', '2n'],
+type PhraseMark = 'lyr' | 'stc' | 'rise' | 'fall'
+type MelodyEvent = [time: string, note: string, dur: string, mark?: PhraseMark]
+
+/**
+ * 古筝主旋律(D 宫调式,散板呼吸):
+ * 前奏疏朗铺陈 → 主歌以大跳留白、乐句间留呼吸 → 副歌登高收句 → 尾声下行送归,收于宫
+ */
+const MELODY: MelodyEvent[] = [
+  // 主歌 A(大跳为主,句间留白;引子由散板层 INTRO 负责)
+  ['4:0:0', 'D4', '2n', 'stc'], // 起笔沉稳,顿
+  ['4:2:0', 'A4', '2n', 'rise'], // 上行扬举
+  ['5:0:0', 'F#4', '2n', 'stc'],
+  ['5:2:0', 'D4', '2n', 'fall'], // 下行渐弱
+  ['6:0:0', 'E4', '2n', 'stc'],
+  ['6:2:0', 'A4', '2n', 'rise'], // 四度上眺
+  ['7:0:0', 'F#4', '4n', 'stc'], // 顿
+  ['7:1:0', 'E4', '4n', 'fall'],
+  ['7:2:0', 'D4', '4n', 'stc'],
+  ['7:3:2', 'B3', '16n'], // 倚音引句
+  ['8:0:0', 'D4', '2n', 'stc'],
+  ['8:2:0', 'A4', '2n', 'rise'],
+  ['9:0:0', 'B4', '2n', 'rise'],
+  ['9:2:0', 'D5', '2n', 'lyr'], // 高音飘起,副歌前眺
+  ['10:0:0', 'F#4', '2n', 'fall'],
+  ['10:2:0', 'E4', '2n', 'stc'],
+  ['11:0:0', 'D4', '1n', 'fall'], // 收句归落
+  // 副歌 B(登高收句,大跳换气)
+  ['12:0:0', 'A4', '2n', 'rise'],
+  ['12:2:0', 'D5', '2n', 'lyr'], // 高音长音上扬
+  ['13:0:0', 'E5', '2n', 'lyr'], // 飘
+  ['13:2:0', 'D5', '2n', 'fall'],
+  ['14:0:0', 'B4', '2n', 'rise'],
+  ['14:2:0', 'D5', '2n', 'lyr'],
+  ['15:0:0', 'A4', '1n', 'fall'], // 长音渐弱
+  ['16:0:0', 'D5', '2n', 'lyr'],
+  ['16:2:0', 'E5', '2n', 'lyr'],
+  ['17:0:0', 'D5', '2n', 'rise'],
+  ['17:2:0', 'B4', '2n', 'fall'],
+  ['18:0:0', 'F#4', '2n', 'stc'],
+  ['18:2:0', 'A4', '2n', 'rise'],
+  ['19:0:0', 'D5', '1n', 'lyr'], // 峰顶长音
+  // 尾声(大跳回落,送归)
+  ['20:0:0', 'B4', '2n', 'rise'], // 最后一次扬
+  ['21:0:0', 'A4', '2n', 'fall'], // 留白一拍
+  ['21:2:0', 'F#4', '2n', 'stc'],
+  ['22:0:0', 'A3', '4n', 'stc'], // 低音顿笔
+  ['22:2:0', 'D4', '2n', 'fall'],
   ['22:3:2', 'E4', '16n'], // 倚音送尾
-  ['23:0:0', 'D4', '1n']
+  ['23:0:0', 'D4', '1n', 'fall'] // 归于宫,渐弱收
 ]
 
 /**
@@ -130,49 +109,36 @@ const PIPA: NoteEvent[] = [
   ['23:3:0', 'D5', '2n']
 ]
 
-/** 低音:长持续、弱存在,两小节一枚 */
-const BASS: NoteEvent[] = [
-  ['4:0:0', 'D2', '2m'],
-  ['6:0:0', 'A2', '2m'],
-  ['8:0:0', 'D2', '2m'],
-  ['10:0:0', 'E2', '1m'],
-  ['11:0:0', 'D2', '1m'],
-  ['12:0:0', 'D2', '2m'],
-  ['14:0:0', 'E2', '2m'],
-  ['16:0:0', 'D2', '2m'],
-  ['18:0:0', 'A2', '1m'],
-  ['19:0:0', 'D2', '1m'],
-  ['20:0:0', 'A2', '2m'],
-  ['22:0:0', 'D2', '2m']
+/**
+ * 低音持续音点缀(替代"西方和弦进行"):
+ * 不再用多音和弦,改为古琴按音式的同音反复(轻点两下),单声部线性,
+ * 主歌极疏(如远山沉在雾下),副歌高潮前与峰顶处微起,尾声沉归
+ */
+const DRONE_POINTS: [time: string, note: string, vel: number][] = [
+  ['5:0:0', 'D2', 0.22], // 主歌,若隐若现
+  ['8:0:0', 'D2', 0.24],
+  ['10:0:0', 'A2', 0.22],
+  ['12:0:0', 'D3', 0.3], // 副歌前,轻点
+  ['12:2:0', 'D3', 0.24],
+  ['15:2:0', 'A2', 0.26], // 副歌换气
+  ['16:0:0', 'D3', 0.32], // 二次高潮
+  ['16:2:0', 'D3', 0.26],
+  ['19:2:0', 'D3', 0.3], // 峰顶余韵
+  ['22:0:0', 'A2', 0.24] // 尾声沉
 ]
 
-/** 和声垫:四五度叠置(避免西式三度堆叠),主歌轻、副歌厚 */
-const PAD: ChordEvent[] = [
-  ['4:0:0', ['D3', 'A3', 'E4'], '1m'],
-  ['5:0:0', ['D3', 'A3', 'E4'], '1m'],
-  ['6:0:0', ['A2', 'E3', 'B3'], '1m'],
-  ['7:0:0', ['A2', 'E3', 'B3'], '1m'],
-  ['8:0:0', ['D3', 'A3', 'E4'], '1m'],
-  ['9:0:0', ['D3', 'A3', 'E4'], '1m'],
-  ['10:0:0', ['E3', 'B3', 'F#4'], '1m'],
-  ['11:0:0', ['D3', 'A3', 'D4'], '1m'],
-  ['12:0:0', ['D3', 'A3', 'D4', 'A4'], '1m'],
-  ['13:0:0', ['B2', 'F#3', 'B3', 'F#4'], '1m'],
-  ['14:0:0', ['E3', 'B3', 'E4'], '1m'],
-  ['15:0:0', ['E3', 'B3', 'E4'], '1m'],
-  ['16:0:0', ['D3', 'A3', 'D4', 'A4'], '1m'],
-  ['17:0:0', ['B2', 'F#3', 'B3', 'F#4'], '1m'],
-  ['18:0:0', ['A2', 'E3', 'A3'], '1m'],
-  ['19:0:0', ['D3', 'A3', 'D4'], '1m']
-]
-
-/** 副歌鼓点:隔小节强拍一记太鼓,藏在混响里 */
+/** 副歌鼓点:隔小节一点的太鼓心跳,力度由弱渐强再归于静(意境点染) */
 const DRUM_HITS: [time: string, note: string, vel: number][] = [
-  ['12:0:0', 'C2', 0.45],
-  ['14:0:0', 'G2', 0.3],
-  ['16:0:0', 'C2', 0.45],
-  ['18:0:0', 'G2', 0.3]
+  ['12:0:0', 'C2', 0.3],
+  ['13:0:0', 'C2', 0.38],
+  ['14:0:0', 'G2', 0.44],
+  ['16:0:0', 'C2', 0.5],
+  ['18:0:0', 'G2', 0.36],
+  ['19:0:0', 'C2', 0.22]
 ]
+
+/** 风铃(钟琴)点景:概率触发,似檐下风动,偶然一响 */
+const CHIME_POINT_TIMES = ['1:1:0', '5:2:0', '9:1:0', '13:2:0', '17:1:0', '21:0:0']
 
 // ---- 运行时状态(全部在动态加载后建立) ----
 let T: typeof ToneNS | null = null
@@ -184,6 +150,10 @@ let lastClickAt = 0
 let musicBus: ToneNS.Gain | null = null
 let sfxBus: ToneNS.Gain | null = null
 let zheng: ToneNS.Sampler | null = null
+/** 古筝余音自动化(音尾微降再回,模拟弦振衰减) */
+let zhengTail: ToneNS.Gain | null = null
+/** 古筝泛音叠加层(极轻正弦,补充琴箱共鸣) */
+let zhengHarmonics: ToneNS.Synth | null = null
 let zhengSfx: ToneNS.Sampler | null = null
 let pipa: ToneNS.Sampler | null = null
 let wood: ToneNS.Sampler | null = null
@@ -192,7 +162,6 @@ let taikoBgm: ToneNS.Sampler | null = null
 let bellSampler: ToneNS.Sampler | null = null
 let chimeSampler: ToneNS.Sampler | null = null
 let bassSynth: ToneNS.Synth | null = null
-let padSynth: ToneNS.PolySynth | null = null
 
 function applyPrefs(): void {
   if (!T || !musicBus || !sfxBus) return
@@ -209,11 +178,11 @@ async function init(): Promise<void> {
   const sampler = (dir: string, urls: Record<string, string>, volume: number, release = 1.5): ToneNS.Sampler =>
     new tone.Sampler({ urls, baseUrl: `${audioBase}${dir}/`, volume, release })
 
-  // 总线:音乐(带长混响,山谷空旷)/ 音效(短混响,清爽)
+  // 总线:音乐(清潭式短混响,清透而非山谷)/ 音效(极短混响,干净)
   musicBus = new tone.Gain(prefs.musicVol * 0.9).toDestination()
   sfxBus = new tone.Gain(prefs.sfxVol * 0.8).toDestination()
-  const hallVerb = new tone.Reverb({ decay: 4.5, preDelay: 0.03, wet: 0.28 }).connect(musicBus)
-  const roomVerb = new tone.Reverb({ decay: 1.8, preDelay: 0.01, wet: 0.2 }).connect(sfxBus)
+  const hallVerb = new tone.Reverb({ decay: 2.2, preDelay: 0.015, wet: 0.2 }).connect(musicBus)
+  const roomVerb = new tone.Reverb({ decay: 1.1, preDelay: 0.005, wet: 0.12 }).connect(sfxBus)
 
   // 真实采样乐器(FluidR3 音源,见 public/audio/README.md)
   const ZHENG_URLS = {
@@ -228,8 +197,19 @@ async function init(): Promise<void> {
     A5: 'A5.mp3',
     C6: 'C6.mp3'
   }
-  zheng = sampler('zheng', ZHENG_URLS, -2, 2.5).connect(hallVerb)
+  // 古筝 EQ 塑形 + 余音自动化:箱体中频提升,音尾微降再回模拟弦振衰减
+  const zhengEQ = new tone.EQ3({ low: -2, mid: 3, high: 2 }).connect(hallVerb)
+  zhengTail = new tone.Gain(1).connect(zhengEQ)
+  zheng = sampler('zheng', ZHENG_URLS, -2, 2.5).connect(zhengTail)
   zhengSfx = sampler('zheng', ZHENG_URLS, -6, 2).connect(roomVerb)
+
+  // 泛音叠加层:轻柔的正弦泛音(频率 = 基频 × 2,八度虚影),随旋律触发,
+  // 给 GM 干涩采样盖一层"琴箱共鸣穹顶"——补充中高频的木质感
+  zhengHarmonics = new tone.Synth({
+    volume: -26,
+    oscillator: { type: 'sine' },
+    envelope: { attack: 0.01, decay: 0.4, sustain: 0.18, release: 2.0 }
+  }).connect(zhengTail)
   pipa = sampler(
     'pipa',
     { C4: 'C4.mp3', F4: 'F4.mp3', A4: 'A4.mp3', C5: 'C5.mp3', F5: 'F5.mp3', A5: 'A5.mp3', C6: 'C6.mp3' },
@@ -240,18 +220,13 @@ async function init(): Promise<void> {
   taiko = sampler('drum', { C2: 'C2.mp3', G2: 'G2.mp3', C3: 'C3.mp3' }, -6, 1).connect(roomVerb)
   taikoBgm = sampler('drum', { C2: 'C2.mp3', G2: 'G2.mp3', C3: 'C3.mp3' }, -16, 1).connect(hallVerb)
   bellSampler = sampler('bell', { C4: 'C4.mp3', G4: 'G4.mp3', C5: 'C5.mp3' }, -8, 2.5).connect(roomVerb)
-  chimeSampler = sampler('chime', { C5: 'C5.mp3', G5: 'G5.mp3', C6: 'C6.mp3' }, -12, 1.5).connect(roomVerb)
+  chimeSampler = sampler('chime', { C5: 'C5.mp3', G5: 'G5.mp3', C6: 'C6.mp3' }, -12, 1.5).connect(hallVerb)
 
-  // 低音与和声垫仍用轻合成,藏在采样声部之下
+  // 低音与低音持续音仍用轻合成,藏在采样声部之下
   bassSynth = new tone.Synth({
     volume: -20,
     oscillator: { type: 'sine' },
     envelope: { attack: 0.5, decay: 0.4, sustain: 0.7, release: 2.5 }
-  }).connect(hallVerb)
-  padSynth = new tone.PolySynth(tone.Synth, {
-    volume: -27,
-    oscillator: { type: 'triangle' },
-    envelope: { attack: 1.4, decay: 0.5, sustain: 0.8, release: 2.8 }
   }).connect(hallVerb)
 
   // 等混响与全部采样就绪
@@ -267,30 +242,91 @@ async function init(): Promise<void> {
   const toEvents = (list: NoteEvent[]): { time: string; note: string; dur: string }[] =>
     list.map(([time, note, dur]) => ({ time, note, dur }))
 
-  const melodyPart = new tone.Part((time, ev) => {
-    zheng?.triggerAttackRelease(ev.note, ev.dur, time, 0.7 + Math.random() * 0.2)
-  }, toEvents(MELODY))
-  melodyPart.humanize = 0.02
+  const melodyPart = new tone.Part(
+    (time, ev) => {
+      // 演奏法塑形:高音长音飘起(延音),低音顿挫(短音),旋律乐句走向渐强渐弱
+      let dur = ev.dur
+      let vel = 0.6 + Math.random() * 0.15
+      const mark = ev.mark as PhraseMark | undefined
+      if (mark === 'lyr') {
+        // 高音长音:拉长 30%,力度略强,余音袅袅
+        dur = ev.dur === '2n' ? '2n.' : ev.dur === '1n' ? '1n.' : ev.dur
+        vel = 0.78 + Math.random() * 0.15
+      } else if (mark === 'stc') {
+        // 低音顿挫:缩短 50%,力度偏轻,如墨点皴(2n→4n,4n→8n,1n→2n)
+        dur = ev.dur === '2n' ? '4n' : ev.dur === '4n' ? '8n' : ev.dur
+        vel = 0.42 + Math.random() * 0.12
+      } else if (mark === 'rise') {
+        // 上行渐强
+        vel = 0.72 + Math.random() * 0.1
+      } else if (mark === 'fall') {
+        // 下行渐弱
+        vel = 0.5 + Math.random() * 0.1
+      }
+      zheng?.triggerAttackRelease(ev.note, dur, time, vel)
+      // 泛音叠加:琴箱共鸣穹顶(八度虚影,极轻,高音愈亮)
+      if (zhengHarmonics && T) {
+        const freq = T.Frequency(ev.note).toFrequency() * 2 // 八度泛音
+        const harmVel = mark === 'lyr' ? 0.9 : mark === 'stc' ? 0.5 : 0.7
+        zhengHarmonics.triggerAttackRelease(freq, dur, time, harmVel)
+      }
+      // 长音余音自动化:高音飘起后,弦振微衰再回(模拟泛音尾韵)
+      if (mark === 'lyr' && zhengTail && T) {
+        // 用 setTimeout 而非 transport.schedule:loop 每轮回调都会执行,
+        // 但 schedule 是绝对时间一次性的,回绕后会丢失;setTimeout 跟随真实时间
+        // dur 秒数按 BPM 换算(四分音符 = 60/BPM 秒);'2n' = 2 拍,'1n' = 4 拍,'4n' = 1 拍
+        const beatSec = 60 / BPM
+        const beats = dur.endsWith('.') ? Number(dur[0]) * 1.5 : Number(dur[0])
+        const durSec = beats * beatSec
+        const ms = (time - T.now()) * 1000 + durSec * 1000 + 150
+        if (ms > 0 && ms < 12000) {
+          setTimeout(() => {
+            if (zhengTail) {
+              zhengTail.gain.rampTo(0.93, 0.25)
+              zhengTail.gain.rampTo(1, 0.6)
+            }
+          }, ms)
+        }
+      }
+    },
+    MELODY.map(([time, note, dur, mark]) => ({ time, note, dur, mark }))
+  )
+  melodyPart.humanize = 0.06 + Math.random() * 0.02 // 演奏家式微自由,每轮略不同
   melodyPart.start(0)
 
   const pipaPart = new tone.Part((time, ev) => {
     pipa?.triggerAttackRelease(ev.note, ev.dur, time, 0.55 + Math.random() * 0.2)
   }, toEvents(PIPA))
-  pipaPart.humanize = 0.01
+  pipaPart.humanize = 0.05 + Math.random() * 0.02
   pipaPart.start(0)
 
-  const bassPart = new tone.Part((time, ev) => {
-    bassSynth?.triggerAttackRelease(ev.note, ev.dur, time, 0.8)
-  }, toEvents(BASS))
-  bassPart.start(0)
+  // 散板引子:Part 承载(loop 每轮可靠重放),回调内做自由时值伸缩——
+  // 每轮循环的引子呼吸略不同,听感即"拍无定值,随心起止"
+  const INTRO: NoteEvent[] = [
+    ['0:0:0', 'A3', '2n'],
+    ['0:2:0', 'D4', '2n'],
+    ['1:0:0', 'E4', '4n'],
+    ['1:1:0', 'A3', '4n'],
+    ['1:2:0', 'D5', '2n'], // 八度登高
+    ['2:0:0', 'A4', '2n'],
+    ['2:2:0', 'D4', '1n'] // 归于宫
+  ]
+  const introPart = new tone.Part((time, ev) => {
+    // 自由时值:起音时间仅正偏移(0~0.3s),散板"迟而不早",避免与 loop 起点碰撞
+    const t = time + Math.random() * 0.3
+    zheng?.triggerAttackRelease(ev.note, ev.dur, t, 0.5 + Math.random() * 0.2)
+  }, toEvents(INTRO))
+  introPart.start(0)
 
-  const padPart = new tone.Part(
+  // 低音持续音点缀:同音反复,古琴按音式(单声部线性,无和弦进行感)
+  const dronePart = new tone.Part(
     (time, ev) => {
-      padSynth?.triggerAttackRelease(ev.notes, ev.dur, time, 0.6)
+      bassSynth?.triggerAttackRelease(ev.note, '4n.', time, ev.vel)
     },
-    PAD.map(([time, notes, dur]) => ({ time, notes, dur }))
+    DRONE_POINTS.map(([time, note, vel]) => ({ time, note, vel }))
   )
-  padPart.start(0)
+  dronePart.humanize = 0.04
+  dronePart.start(0)
 
   const drumPart = new tone.Part(
     (time, ev) => {
@@ -299,6 +335,19 @@ async function init(): Promise<void> {
     DRUM_HITS.map(([time, note, vel]) => ({ time, note, vel }))
   )
   drumPart.start(0)
+
+  // 风铃点景:概率触发(约 45% 的点响一声),随机音高与力度,似檐下风动偶然一响
+  const chimePart = new tone.Part(
+    time => {
+      if (Math.random() < 0.45) {
+        const note = ['C6', 'G5', 'D6', 'A5'][Math.floor(Math.random() * 4)]!
+        chimeSampler?.triggerAttackRelease(note, '4n', time, 0.12 + Math.random() * 0.08)
+      }
+    },
+    CHIME_POINT_TIMES.map(time => ({ time }))
+  )
+  chimePart.humanize = 0.08
+  chimePart.start(0)
 
   // 切后台暂停乐曲,回前台续播
   document.addEventListener('visibilitychange', () => {

@@ -46,6 +46,14 @@ export const usePlayerStore = defineStore(
     // Phase 30 区域镇压(每个区域独立统计)
     const regionStats = ref<Record<string, import('@/core/suppress').RegionStats>>({})
     const suppressedRegions = ref<string[]>([])
+    /** 镇压时间戳:区域 → 镇压开始的时刻(供复苏判定) */
+    const suppressedSince = ref<Record<string, number>>({})
+
+    // Phase 30.9 世界记忆
+    /** 宿敌列表(同一敌人败我 ≥3 次) */
+    const nemeses = ref<import('@/types').NemesisRecord[]>([])
+    /** 区域总胜场(供兴衰状态派生;regionStats 已有近似数据,但保持独立统计纯胜场) */
+    const regionWins = ref<Record<string, number>>({})
 
     // ---------- 境界 ----------
     const realm = computed(() => realmDef(major.value))
@@ -250,11 +258,15 @@ export const usePlayerStore = defineStore(
     function suppressRegion(regionId: string): void {
       if (!suppressedRegions.value.includes(regionId)) {
         suppressedRegions.value = [...suppressedRegions.value, regionId]
+        suppressedSince.value = { ...suppressedSince.value, [regionId]: Date.now() }
       }
     }
 
     function unsuppressRegion(regionId: string): void {
       suppressedRegions.value = suppressedRegions.value.filter(id => id !== regionId)
+      const next = { ...suppressedSince.value }
+      delete next[regionId]
+      suppressedSince.value = next
       // 重置连胜计数
       if (regionStats.value[regionId]) {
         regionStats.value = {
@@ -262,6 +274,17 @@ export const usePlayerStore = defineStore(
           [regionId]: { ...regionStats.value[regionId]!, consecutiveWins: 0 },
         }
       }
+    }
+
+    // ---------- Phase 30.9 世界记忆 ----------
+    /** 记录一次净胜(用于区域兴衰的累计胜场) */
+    function recordRegionWin(regionId: string): void {
+      regionWins.value = { ...regionWins.value, [regionId]: (regionWins.value[regionId] ?? 0) + 1 }
+    }
+
+    /** 记录一条宿敌(由 worldMemory.recordLoss 提供) */
+    function setNemeses(list: import('@/types').NemesisRecord[]): void {
+      nemeses.value = list
     }
 
     return {
@@ -283,6 +306,9 @@ export const usePlayerStore = defineStore(
       companionBeastId,
       regionStats,
       suppressedRegions,
+      suppressedSince,
+      nemeses,
+      regionWins,
       realm,
       realmName,
       subName,
@@ -319,7 +345,9 @@ export const usePlayerStore = defineStore(
       markCaveEventToday,
       updateRegionStats,
       suppressRegion,
-      unsuppressRegion
+      unsuppressRegion,
+      recordRegionWin,
+      setNemeses
     }
   },
   { persist: persistConfig('player') }

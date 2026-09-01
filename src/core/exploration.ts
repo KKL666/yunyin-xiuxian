@@ -20,6 +20,7 @@ import { useAdventureStore } from '@/stores/adventure'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useUiStore } from '@/stores/ui'
 import { checkSuppression } from './suppress'
+import { recordLoss, isNemesis, markAvenged } from './worldMemory'
 
 /** 区域是否可解锁(前置首领已清) */
 export function regionAvailable(regionId: string): boolean {
@@ -131,14 +132,32 @@ function runBattle(now: number): void {
     const player = usePlayerStore()
     const ui = useUiStore()
     player.updateRegionStats(region.id, result.win, result.rounds, damageTakenPct)
+    player.recordRegionWin(region.id)
     const suppressed = checkSuppression(player, region.id)
     if (suppressed) {
       player.suppressRegion(region.id)
       ui.toast(`你已彻底镇压${region.name},此地将自动产出资源`, 'rare')
     }
+
+    // Phase 30.9 S2: 击中宿敌 → 雪耻
+    if (isNemesis(player.nemeses, eDef.id)) {
+      player.setNemeses(markAvenged(player.nemeses, eDef.id, now))
+      ui.toast(`【雪耻】宿敌${eDef.name}已被斩于剑下!`, 'rare')
+    }
   } else {
     cultivation.addBuff('injury', now)
     adventure.setSession({ ...s, losses: s.losses + 1 })
+
+    // Phase 30.9 S2: 记录败北,达到阈值标记宿敌
+    const player = usePlayerStore()
+    const ui = useUiStore()
+    const { list, becameNemesis } = recordLoss(player.nemeses, eDef.id, eDef.name, region.id, now)
+    if (becameNemesis) {
+      player.setNemeses(list)
+      ui.toast(`【宿敌】你已在${eDef.name}手下败北三次——此敌已成你的宿敌!`, 'warn')
+    } else {
+      player.setNemeses(list)
+    }
     stopExploration('defeat')
   }
 }

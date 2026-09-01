@@ -39,6 +39,21 @@
         </button>
       </div>
       <p class="mt-2 text-center text-[10px] text-ink-ghost">点击部位查看候选,行囊满时新掉落自动折作器灵尘</p>
+
+      <!-- 全部藏品(含佩戴中):部位槽之下的完整清单 -->
+      <div v-if="allItems.length" class="mt-4">
+        <SectionTitle title="全部藏品" :hint="`${allItems.length} 件 · 行囊 ${inventory.bagItems.length}/${BAG_CAPACITY}`" />
+        <div class="mt-2 grid grid-cols-3 gap-2">
+          <EquipmentCard
+            v-for="row in allItems"
+            :key="row.item.uid"
+            :item="row.item"
+            :equipped="row.equipped"
+            @open="openDetail"
+          />
+        </div>
+      </div>
+      <p v-else class="mt-8 text-center text-[12px] text-ink-ghost">行囊空空,去历练中寻些机缘吧</p>
     </template>
 
     <!-- 丹药 -->
@@ -236,6 +251,7 @@
   import { pillDef } from '@/data/pills'
   import { artifactDef, ARTIFACT_LEVEL_BONUS } from '@/data/artifacts'
   import { EQUIP_SLOT_NAMES, equipmentTemplate } from '@/data/equipment'
+  import { BAG_CAPACITY } from '@/data/constants'
   import { usePill, availableRecipes, craftPill, pillCraftCost } from '@/core/pillService'
   import { decomposeByRanks, decomposeEquipment, artifactUpCost, upgradeArtifact } from '@/core/forge'
   import { keepVerdict } from '@/core/smartKeep'
@@ -247,6 +263,7 @@
   import GameIcon from '@/components/common/GameIcon.vue'
   import QualityTag from '@/components/common/QualityTag.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
+  import EquipmentCard from '@/components/equipment/EquipmentCard.vue'
 
   const inventory = useInventoryStore()
   const resources = useResourcesStore()
@@ -280,6 +297,16 @@
         stock: inventory.bagItems.filter(it => equipmentTemplate(it.templateId)?.slot === slot).length
       }
     })
+  )
+
+  /** 全部藏品(含佩戴中),按品质/层级降序 */
+  const allItems = computed(() =>
+    inventory.items
+      .map(item => ({ item, equipped: inventory.equippedUids.has(item.uid) }))
+      .sort((a, b) => {
+        const dq = qualityDef(b.item.quality).rank - qualityDef(a.item.quality).rank
+        return dq !== 0 ? dq : b.item.tier - a.item.tier
+      })
   )
 
   /** 当前部位的候选:佩戴中的置顶,其余按品质/层级降序 */

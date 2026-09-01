@@ -1,7 +1,7 @@
 /**
  * 突破服务 —— 成功率计算 / 天劫 / 结算
  */
-import { rng } from '@/utils/random'
+import { mulberry32, rng } from '@/utils/random'
 import { formatPercent } from '@/utils/format'
 import { realmDef, realmLabel } from '@/data/realms'
 import { BT_FAIL_EXP_LOSS, BT_QI_COST_RATIO, TRIBULATION_BASE_WAVES } from '@/data/constants'
@@ -13,17 +13,46 @@ import { useResourcesStore } from '@/stores/resources'
 import { useCultivationStore } from '@/stores/cultivation'
 import { useUiStore } from '@/stores/ui'
 import type { BreakthroughView } from '@/stores/ui'
+import type { StatMods } from '@/types'
 import { playSfx } from './audio'
 
 export interface BreakthroughInfo {
   ready: boolean
   reason: string
+  /** 修炼突破的基础成功率(未计天劫) */
   rate: number
   rateText: string
+  /** 渡劫成功率(大境界天劫才需要,与 rate 独立) */
+  tribRate: number | null
   qiCost: number
   isMajor: boolean
   needTribulation: boolean
   targetLabel: string
+}
+
+/** 蒙特卡洛采样次数:渡劫波次少(4~15),几千次也在毫秒级 */
+const TRIB_SAMPLE = 4000
+
+/** 按玩家词条推演渡劫成功率(与 runTribulation 同逻辑,固定种子保证 deterministic,可无 Pinia 测试) */
+export function tribulationSuccessRate(targetMajor: number, mods: StatMods): number {
+  const rand = mulberry32(0x5eed)
+  const waves = TRIBULATION_BASE_WAVES + targetMajor
+  const resist = Math.min(0.8, modOf(mods, 'tribulationResist'))
+  const reduction = Math.min(0.6, modOf(mods, 'damageReduction'))
+  const lowHpRed = Math.min(0.6, modOf(mods, 'lowHpReduction'))
+  const regen = modOf(mods, 'regenPerRound')
+  let survived = 0
+  for (let s = 0; s < TRIB_SAMPLE; s += 1) {
+    let hpLeft = 1 + modOf(mods, 'shieldOnStart')
+    for (let w = 1; w <= waves; w += 1) {
+      let dmg = tribulationWaveDamage(targetMajor, w, resist) * (1 - reduction) * (0.85 + rand() * 0.3)
+      if (hpLeft < 0.3) dmg *= 1 - lowHpRed
+      hpLeft = hpLeft - dmg + regen
+      if (hpLeft <= 0) break
+    }
+    if (hpLeft > 0) survived += 1
+  }
+  return survived / TRIB_SAMPLE
 }
 
 export function breakthroughInfo(): BreakthroughInfo {
@@ -48,11 +77,13 @@ export function breakthroughInfo(): BreakthroughInfo {
     ready = false
     reason = '灵气不足'
   }
+  const tribRate = needTribulation ? tribulationSuccessRate(nextMajor, mods) : null
   return {
     ready,
     reason,
     rate,
     rateText: formatPercent(rate, 0),
+    tribRate: tribRate === null ? null : Math.min(1, Math.max(0, tribRate)),
     qiCost,
     isMajor,
     needTribulation,

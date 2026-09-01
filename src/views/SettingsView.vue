@@ -31,6 +31,20 @@
         <input v-model="settings.reduceMotion" type="checkbox" class="h-4 w-4 accent-cinnabar" />
       </label>
       <div class="flex items-center justify-between py-3">
+        <span class="text-[13px] text-ink-soft">夜间模式</span>
+        <div class="flex gap-1">
+          <button
+            v-for="o in THEME_OPTIONS"
+            :key="o.id"
+            class="chip-ink"
+            :class="settings.theme === o.id ? 'border-cinnabar text-cinnabar' : 'border-ink/25 text-ink-faint'"
+            @click="settings.theme = o.id"
+          >
+            {{ o.label }}
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between py-3">
         <span class="text-[13px] text-ink-soft">战报速度</span>
         <div class="flex gap-1">
           <button
@@ -63,29 +77,18 @@
     <!-- 关于 -->
     <SectionTitle title="关于" />
     <div class="card-ink divide-y divide-ink/7 px-4">
-      <a
-        href="https://github.com/setube/yunyin-xiuxian"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex items-center justify-between py-3 active:opacity-60"
-      >
-        <span class="text-[13px] text-ink-soft">开源仓库</span>
-        <span class="text-[11px] text-azure">github.com/setube/yunyin-xiuxian →</span>
-      </a>
-      <a
-        href="https://qm.qq.com/q/pkJR0fttR"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex items-center justify-between py-3 active:opacity-60"
-      >
-        <span class="text-[13px] text-ink-soft">QQ 交流群</span>
-        <span class="text-[11px] text-azure tabular">920930589 →</span>
-      </a>
+      <button class="flex w-full items-center justify-between py-3 active:opacity-60" @click="aboutOpen = true">
+        <span class="text-[13px] text-ink-soft">关于我们</span>
+        <span class="text-[11px] text-ink-faint">查看 →</span>
+      </button>
       <button class="flex w-full items-center justify-between py-3 active:opacity-60" @click="privacyOpen = true">
         <span class="text-[13px] text-ink-soft">隐私政策</span>
         <span class="text-[11px] text-ink-faint">查看 →</span>
       </button>
     </div>
+
+    <!-- 关于我们 -->
+    <AboutDialog :open="aboutOpen" @close="aboutOpen = false" />
 
     <!-- 隐私政策 -->
     <PrivacyDialog :open="privacyOpen" @close="privacyOpen = false" />
@@ -113,19 +116,27 @@
   import { useGameStore } from '@/stores/game'
   import { useUiStore } from '@/stores/ui'
   import { engine } from '@/core/engine'
-  import { downloadSave, importSaveText, resetGame, reloadGame } from '@/core/save'
+  import { downloadSave, importSaveText, resetGame, reloadGame, sealStorageWrites } from '@/core/save'
   import { formatDuration } from '@/utils/format'
   import { SAVE_VERSION } from '@/utils/storage'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import BaseModal from '@/components/common/BaseModal.vue'
   import PrivacyDialog from '@/components/common/PrivacyDialog.vue'
+  import AboutDialog from '@/components/common/AboutDialog.vue'
 
   const settings = useSettingsStore()
   const game = useGameStore()
   const ui = useUiStore()
 
+  const THEME_OPTIONS = [
+    { id: 'auto', label: '跟随系统' },
+    { id: 'light', label: '日间' },
+    { id: 'dark', label: '夜间' }
+  ] as const
+
   const resetConfirm = ref(false)
   const privacyOpen = ref(false)
+  const aboutOpen = ref(false)
   const fileInput = ref<HTMLInputElement | null>(null)
 
   // ---- 重置流程:弹窗期间暂停心跳,取消则恢复 ----
@@ -167,6 +178,8 @@
         return
       }
       ui.toast('存档导入成功,即将重新入定', 'success')
+      // 导入已写盘,立即封存:阻止 persist 插件把旧内存回写覆盖
+      sealStorageWrites()
       setTimeout(reloadGame, 800)
     }
     reader.readAsText(file)

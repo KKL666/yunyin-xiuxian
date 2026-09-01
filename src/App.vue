@@ -36,6 +36,7 @@
   import { useGameStore } from '@/stores/game'
   import { useSettingsStore } from '@/stores/settings'
   import { engine } from '@/core/engine'
+  import { applyTheme, initTheme } from '@/core/theme'
   import { configureAudio, playSfx, stopBgm, unlockAudio } from '@/core/audio'
   import TopStatusBar from '@/components/common/TopStatusBar.vue'
   import BottomNavigation from '@/components/common/BottomNavigation.vue'
@@ -49,6 +50,8 @@
   const game = useGameStore()
   const settings = useSettingsStore()
   const route = useRoute()
+
+  let unsubscribeTheme: () => void = () => undefined
 
   /** 浏览器要求首次交互后才可出声;顺带给所有按钮一个轻点击音 */
   function onPointerDown(e: PointerEvent): void {
@@ -65,12 +68,21 @@
     { immediate: true }
   )
 
+  // 主题:立即应用一次,此后跟随设置变化(auto 时系统切换也会实时跟随)
+  watch(
+    () => settings.theme,
+    t => applyTheme(t),
+    { immediate: true }
+  )
+
   onMounted(() => {
+    unsubscribeTheme = initTheme(() => settings.theme)
     engine.start()
     window.addEventListener('pointerdown', onPointerDown)
   })
 
   onUnmounted(() => {
+    unsubscribeTheme()
     engine.stop()
     stopBgm()
     window.removeEventListener('pointerdown', onPointerDown)

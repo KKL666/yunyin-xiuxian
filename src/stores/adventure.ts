@@ -25,6 +25,8 @@ export const useAdventureStore = defineStore(
     const pendingEventSince = ref(0)
     const seenOnceEvents = ref<string[]>([])
     const lastBattle = ref<LastBattleView | null>(null)
+    /** Phase 30.9 世界记忆:已完成事件的结果记录 */
+    const eventMemories = ref<Record<string, import('@/types').EventMemory>>({})
 
     const sessionActive = computed(() => session.value !== null)
     const currentRegion = computed(() => (session.value ? regionDef(session.value.regionId) : undefined))
@@ -68,6 +70,7 @@ export const useAdventureStore = defineStore(
       pendingEventSince,
       seenOnceEvents,
       lastBattle,
+      eventMemories,
       sessionActive,
       currentRegion,
       setSession,

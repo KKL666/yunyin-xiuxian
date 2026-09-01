@@ -27,10 +27,21 @@
       <div class="ink-divider my-4" />
       <div class="flex items-center justify-between text-[12px] text-ink-soft">
         <span>下一步:{{ btInfo.targetLabel }}</span>
-        <span class="tabular">
-          成功率
-          <span class="text-[15px] font-kai" :class="btInfo.rate >= 0.7 ? 'text-jade' : 'text-cinnabar'">{{ btInfo.rateText }}</span>
-        </span>
+      </div>
+      <div class="mt-2 grid grid-cols-2 gap-2">
+        <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
+          <p class="text-[10px] text-ink-faint">突破成功率</p>
+          <p class="tabular text-[16px] font-kai leading-tight" :class="btInfo.rate >= 0.7 ? 'text-jade' : 'text-cinnabar'">
+            {{ btInfo.rateText }}
+          </p>
+        </div>
+        <div class="rounded-md bg-paper-deep/60 px-2.5 py-1.5">
+          <p class="text-[10px] text-ink-faint">渡劫成功率</p>
+          <p v-if="btInfo.tribRate !== null" class="tabular text-[16px] font-kai leading-tight" :class="btInfo.tribRate >= 0.7 ? 'text-jade' : 'text-violet-ink'">
+            {{ formatPercent(btInfo.tribRate, 0) }}
+          </p>
+          <p v-else class="text-[16px] font-kai leading-tight text-ink-ghost">非大关</p>
+        </div>
       </div>
       <p class="mt-1 text-[11px] text-ink-faint tabular">
         耗灵气 {{ formatNum(btInfo.qiCost) }}
@@ -108,8 +119,8 @@
           <GameIcon name="flame" :size="15" class="text-cinnabar/70" />
         </button>
 
-        <!-- 已习得列表 -->
-        <div class="card-ink divide-y divide-ink/7 px-1">
+        <!-- 已习得列表(限高滚动,功法过多不撑爆页面) -->
+        <div class="card-ink max-h-64 divide-y divide-ink/7 overflow-y-auto px-1">
           <button
             v-for="def in learnedList"
             :key="def!.id"
@@ -148,7 +159,7 @@
   import { buffDef } from '@/data/buffs'
   import { pillDef } from '@/data/pills'
   import { COMPREHEND_PAGE_COST } from '@/data/constants'
-  import { formatDuration, formatGN, formatNum, formatRate } from '@/utils/format'
+  import { formatDuration, formatGN, formatNum, formatPercent, formatRate } from '@/utils/format'
   import { qualityDef } from '@/data/qualities'
   import SectionTitle from '@/components/common/SectionTitle.vue'
   import ProgressBar from '@/components/common/ProgressBar.vue'

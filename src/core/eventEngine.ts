@@ -15,6 +15,7 @@ import { generateEquipment } from './equipGen'
 import { acquireArtifact, acquireEquipment, randomDropArtifact } from './loot'
 import { learnRandomGongfa } from './gongfaService'
 import { collect, track } from './progress'
+import { recordEvent } from './worldMemory'
 import { modOf } from './statsCalc'
 import { usePlayerStore } from '@/stores/player'
 import { useResourcesStore } from '@/stores/resources'
@@ -156,6 +157,9 @@ export function resolveEventChoice(def: EventDef, choiceIdx: number, tier: numbe
   if (def.once) adventure.markEventSeen(def.id)
   collect('event', def.id)
   track('events')
+
+  // Phase 30.9 S3:记录事件记忆(完成的余波后,未来再遇时有机会触发余波文本)
+  adventure.eventMemories = recordEvent(adventure.eventMemories, def.id, choiceIdx, Date.now())
   return { outcomeText: outcome.text, lines }
 }
 

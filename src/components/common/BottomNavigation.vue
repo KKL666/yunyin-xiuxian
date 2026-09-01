@@ -12,7 +12,6 @@
         class="relative flex flex-col items-center gap-0.5 py-2 transition-colors"
         :class="route.name === tab.name ? 'text-cinnabar' : 'text-ink-faint active:text-ink-soft'"
       >
-        <span v-if="route.name === tab.name" class="absolute top-0.5 h-1 w-1 rounded-full bg-cinnabar animate-breathe" />
         <span class="transition-transform duration-200" :class="route.name === tab.name ? '-translate-y-0.5 scale-110' : ''">
           <GameIcon :name="tab.icon" :size="20" />
         </span>

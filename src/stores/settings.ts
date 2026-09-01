@@ -26,8 +26,10 @@ export const useSettingsStore = defineStore(
     })
     /** 是否已同意隐私政策(欢迎页勾选后记录,老档视为已同意) */
     const privacyAccepted = ref(false)
+    /** 主题:跟随系统 / 日间 / 夜间 */
+    const theme = ref<'auto' | 'light' | 'dark'>('auto')
 
-    return { sfxOn, musicOn, musicVol, sfxVol, reduceMotion, battleSpeed, decomposeRanks, smartKeep, privacyAccepted }
+    return { sfxOn, musicOn, musicVol, sfxVol, reduceMotion, battleSpeed, decomposeRanks, smartKeep, privacyAccepted, theme }
   },
   { persist: persistConfig('settings') }
 )
