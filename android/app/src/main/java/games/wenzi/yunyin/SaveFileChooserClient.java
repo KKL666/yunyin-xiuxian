@@ -23,11 +23,27 @@ import com.getcapacitor.BridgeWebChromeClient;
  */
 public class SaveFileChooserClient extends BridgeWebChromeClient {
 
-    private final Bridge bridge;
+    private final ActivityResultLauncher<Intent> filePickerLauncher;
+    private ValueCallback<Uri[]> pendingCallback;
 
     public SaveFileChooserClient(Bridge bridge) {
         super(bridge);
-        this.bridge = bridge;
+        // Must register the launcher here (during onCreate), not inside
+        // onShowFileChooser, because Activity Result registration is only
+        // allowed before the lifecycle reaches STARTED.
+        this.filePickerLauncher = bridge.registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (pendingCallback != null) {
+                    Uri[] uris = WebChromeClient.FileChooserParams.parseResult(
+                        result.getResultCode(),
+                        result.getData()
+                    );
+                    pendingCallback.onReceiveValue(uris);
+                    pendingCallback = null;
+                }
+            }
+        );
     }
 
     @Override
@@ -41,18 +57,10 @@ public class SaveFileChooserClient extends BridgeWebChromeClient {
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
 
-            ActivityResultLauncher<Intent> launcher = bridge.registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    Uri[] uris = WebChromeClient.FileChooserParams.parseResult(
-                        result.getResultCode(),
-                        result.getData()
-                    );
-                    filePathCallback.onReceiveValue(uris);
-                }
-            );
-            launcher.launch(intent);
+            pendingCallback = filePathCallback;
+            filePickerLauncher.launch(intent);
         } catch (Exception e) {
+            pendingCallback = null;
             filePathCallback.onReceiveValue(null);
         }
         return true;
