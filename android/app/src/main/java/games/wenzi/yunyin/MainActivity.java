@@ -15,6 +15,10 @@ public class MainActivity extends BridgeActivity {
             WebView webView = bridge.getWebView();
             if (webView != null) {
                 webView.setWebChromeClient(new SaveFileChooserClient(bridge));
+
+                SaveExportHandler exportHandler = new SaveExportHandler(this, webView);
+                webView.setDownloadListener(exportHandler);
+                webView.addJavascriptInterface(exportHandler, "SaveBridge");
             }
         }
     }
