@@ -13,13 +13,13 @@ import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeWebChromeClient;
 
 /**
- * 放宽文件类型过滤的 WebChromeClient。
+ * WebChromeClient that relaxes the file picker MIME filter.
  *
- * 游戏存档导出文件使用自定义 ".save" 扩展名，其 MIME 类型为
- * application/octet-stream，与网页导入框的 accept="application/json" 不匹配，
- * 导致系统文件选择器把存档文件置灰、点选无反应。
- *
- * 这里把选择器放宽为 */*，让所有文件（含 .save）都可被选中。
+ * The game's save export uses a custom ".save" extension, whose MIME type is
+ * application/octet-stream. This does not match the web page's
+ * accept="application/json", so the system picker greys out the save file and
+ * tapping it does nothing. This client opens the picker with a wildcard type
+ * so every file, including .save, can be selected.
  */
 public class SaveFileChooserClient extends BridgeWebChromeClient {
 
